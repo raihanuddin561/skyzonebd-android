@@ -1,0 +1,105 @@
+package com.skyzonebd.android.data.local
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.google.gson.Gson
+import com.skyzonebd.android.data.model.User
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "skyzone_preferences")
+
+@Singleton
+class PreferencesManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
+    
+    private val dataStore = context.dataStore
+    
+    companion object {
+        private val TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val USER_KEY = stringPreferencesKey("user")
+    }
+    
+    // Token management
+    suspend fun saveToken(token: String) {
+        dataStore.edit { preferences ->
+            preferences[TOKEN_KEY] = token
+        }
+    }
+    
+    fun getTokenFlow(): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[TOKEN_KEY]
+        }
+    }
+    
+    fun getToken(): String? {
+        return runBlocking {
+            dataStore.data.first()[TOKEN_KEY]
+        }
+    }
+    
+    suspend fun clearToken() {
+        dataStore.edit { preferences ->
+            preferences.remove(TOKEN_KEY)
+        }
+    }
+    
+    // User management
+    suspend fun saveUser(user: User) {
+        dataStore.edit { preferences ->
+            preferences[USER_KEY] = gson.toJson(user)
+        }
+    }
+    
+    fun getUserFlow(): Flow<User?> {
+        return dataStore.data.map { preferences ->
+            preferences[USER_KEY]?.let { json ->
+                try {
+                    gson.fromJson(json, User::class.java)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
+    }
+    
+    suspend fun getUser(): User? {
+        return dataStore.data.first()[USER_KEY]?.let { json ->
+            try {
+                gson.fromJson(json, User::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+    
+    suspend fun clearUser() {
+        dataStore.edit { preferences ->
+            preferences.remove(USER_KEY)
+        }
+    }
+    
+    // Clear all data (logout)
+    suspend fun clear() {
+        dataStore.edit { preferences ->
+            preferences.clear()
+        }
+    }
+    
+    // Check if user is logged in
+    suspend fun isLoggedIn(): Boolean {
+        return getToken() != null
+    }
+}

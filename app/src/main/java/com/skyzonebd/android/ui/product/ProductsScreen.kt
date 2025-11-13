@@ -35,10 +35,15 @@ import com.skyzonebd.android.util.Resource
 fun ProductsScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    cartViewModel: com.skyzonebd.android.ui.cart.CartViewModel
 ) {
     val allProductsState by viewModel.allProducts.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val cartItemCount by cartViewModel.itemCount.collectAsState()
+    var showFilterDialog by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf("newest") }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
     
     LaunchedEffect(Unit) {
         viewModel.loadAllProducts()
@@ -54,18 +59,45 @@ fun ProductsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showFilterDialog = true }) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                    }
                     IconButton(onClick = { navController.navigate(Screen.Search.route) }) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = { navController.navigate(Screen.Cart.route) }) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
+                    com.skyzonebd.android.ui.common.CartIconWithBadge(
+                        itemCount = cartItemCount,
+                        onClick = { navController.navigate(Screen.Cart.route) }
+                    )
+                    
+                    // Show Login/Register for guest users
+                    if (currentUser == null) {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Login.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Login",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Profile.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -83,7 +115,21 @@ fun ProductsScreen(
             }
             
             is Resource.Success -> {
-                val products = state.data?.products ?: emptyList()
+                var products = state.data?.products ?: emptyList()
+                
+                // Apply filters
+                if (selectedCategory != null) {
+                    products = products.filter { it.categoryId == selectedCategory }
+                }
+                
+                // Apply sorting
+                products = when (sortBy) {
+                    "price_low" -> products.sortedBy { it.price }
+                    "price_high" -> products.sortedByDescending { it.price }
+                    "name_asc" -> products.sortedBy { it.name }
+                    "name_desc" -> products.sortedByDescending { it.name }
+                    else -> products // newest (default API order)
+                }
                 
                 if (products.isEmpty()) {
                     Box(
@@ -100,15 +146,16 @@ fun ProductsScreen(
                                 Icons.Default.Inventory,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             Text(
                                 text = "No Products Available",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             
                             Spacer(modifier = Modifier.height(8.dp))
@@ -116,7 +163,7 @@ fun ProductsScreen(
                             Text(
                                 text = "Check back later for new items",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -126,6 +173,80 @@ fun ProductsScreen(
                             .fillMaxSize()
                             .padding(padding)
                     ) {
+                        // Filter/Sort Chips
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = SurfaceLight,
+                            tonalElevation = 1.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Active filters indicator
+                                if (selectedCategory != null || sortBy != "newest") {
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            selectedCategory = null
+                                            sortBy = "newest"
+                                        },
+                                        label = { Text("Clear Filters") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Close,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                                
+                                // Sort chip
+                                FilterChip(
+                                    selected = sortBy != "newest",
+                                    onClick = { showFilterDialog = true },
+                                    label = {
+                                        Text(
+                                            when (sortBy) {
+                                                "price_low" -> "Price: Low to High"
+                                                "price_high" -> "Price: High to Low"
+                                                "name_asc" -> "Name: A-Z"
+                                                "name_desc" -> "Name: Z-A"
+                                                else -> "Sort"
+                                            }
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Sort,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                )
+                                
+                                // Category filter chip
+                                if (selectedCategory != null) {
+                                    FilterChip(
+                                        selected = true,
+                                        onClick = { showFilterDialog = true },
+                                        label = { Text("Category") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Category,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
                         // Products Count
                         state.data?.pagination?.let { pagination ->
                             Surface(
@@ -143,7 +264,8 @@ fun ProductsScreen(
                                     Text(
                                         text = "${pagination.total ?: products.size} Products",
                                         style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     
                                     // Sort/Filter options could go here
@@ -213,7 +335,8 @@ fun ProductsScreen(
                         Text(
                             text = "Failed to Load Products",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Error
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -221,7 +344,7 @@ fun ProductsScreen(
                         Text(
                             text = state.message ?: "Unknown error",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))
@@ -249,6 +372,20 @@ fun ProductsScreen(
                 }
             }
         }
+        
+        // Filter Dialog
+        if (showFilterDialog) {
+            ProductFilterDialog(
+                currentSort = sortBy,
+                currentCategory = selectedCategory,
+                onDismiss = { showFilterDialog = false },
+                onApply = { newSort, newCategory ->
+                    sortBy = newSort
+                    selectedCategory = newCategory
+                    showFilterDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -262,7 +399,9 @@ fun ProductGridItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -326,7 +465,7 @@ fun ProductGridItem(
                             text = "৳${product.retailPrice}",
                             style = MaterialTheme.typography.bodySmall,
                             textDecoration = TextDecoration.LineThrough,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.width(4.dp))
@@ -377,3 +516,95 @@ fun ProductGridItem(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProductFilterDialog(
+    currentSort: String,
+    currentCategory: String?,
+    onDismiss: () -> Unit,
+    onApply: (String, String?) -> Unit
+) {
+    var selectedSort by remember { mutableStateOf(currentSort) }
+    var selectedCategory by remember { mutableStateOf(currentCategory) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Filter & Sort Products") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Sort Options
+                Text(
+                    "Sort By",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                val sortOptions = listOf(
+                    "newest" to "Newest First",
+                    "price_low" to "Price: Low to High",
+                    "price_high" to "Price: High to Low",
+                    "name_asc" to "Name: A-Z",
+                    "name_desc" to "Name: Z-A"
+                )
+                
+                sortOptions.forEach { (value, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedSort = value }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedSort == value,
+                            onClick = { selectedSort = value }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(label)
+                    }
+                }
+                
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Category Filter (simplified - you can expand this)
+                Text(
+                    "Category",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { selectedCategory = null }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("All Categories")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onApply(selectedSort, selectedCategory) }
+            ) {
+                Text("Apply", color = Primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+

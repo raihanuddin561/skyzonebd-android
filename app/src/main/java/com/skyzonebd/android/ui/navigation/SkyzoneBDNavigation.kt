@@ -16,6 +16,7 @@ import com.skyzonebd.android.ui.auth.AuthViewModel
 import com.skyzonebd.android.ui.auth.LoginScreen
 import com.skyzonebd.android.ui.auth.RegisterScreen
 import com.skyzonebd.android.ui.cart.CartScreen
+import com.skyzonebd.android.ui.cart.CartViewModel
 import com.skyzonebd.android.ui.category.CategoryScreen
 import com.skyzonebd.android.ui.checkout.CheckoutScreen
 import com.skyzonebd.android.ui.home.HomeScreen
@@ -30,6 +31,7 @@ import com.skyzonebd.android.ui.components.BottomNavigationBar
 fun SkyzoneBDNavigation() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
+    val cartViewModel: CartViewModel = hiltViewModel() // Shared CartViewModel for all screens
     val currentUser by authViewModel.currentUser.collectAsState()
     
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -61,7 +63,7 @@ fun SkyzoneBDNavigation() {
         ) {
             // Home
             composable(Screen.Home.route) {
-                HomeScreen(navController = navController)
+                HomeScreen(navController = navController, cartViewModel = cartViewModel)
             }
             
             // Auth
@@ -87,7 +89,7 @@ fun SkyzoneBDNavigation() {
             
             // Cart
             composable(Screen.Cart.route) {
-                CartScreen(navController = navController)
+                CartScreen(navController = navController, viewModel = cartViewModel)
             }
             
             // Product Detail
@@ -100,7 +102,8 @@ fun SkyzoneBDNavigation() {
                 val productId = backStackEntry.arguments?.getString("productId") ?: ""
                 ProductDetailScreen(
                     productId = productId,
-                    navController = navController
+                    navController = navController,
+                    cartViewModel = cartViewModel
                 )
             }
             
@@ -109,14 +112,42 @@ fun SkyzoneBDNavigation() {
                 CategoryScreen(navController = navController)
             }
             
+            // Category Products (specific category)
+            composable(
+                route = Screen.CategoryProducts.route,
+                arguments = listOf(
+                    navArgument("categorySlug") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val categorySlug = backStackEntry.arguments?.getString("categorySlug") ?: ""
+                CategoryScreen(
+                    navController = navController,
+                    categorySlug = categorySlug
+                )
+            }
+            
             // Checkout
             composable(Screen.Checkout.route) {
-                CheckoutScreen(navController = navController)
+                CheckoutScreen(navController = navController, cartViewModel = cartViewModel)
+            }
+            
+            // Order Success
+            composable(
+                route = Screen.OrderSuccess.route,
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+                com.skyzonebd.android.ui.order.OrderSuccessScreen(
+                    orderId = orderId,
+                    navController = navController
+                )
             }
             
             // Products (All Products)
             composable(Screen.Products.route) {
-                ProductsScreen(navController = navController)
+                ProductsScreen(navController = navController, cartViewModel = cartViewModel)
             }
             
             // Profile

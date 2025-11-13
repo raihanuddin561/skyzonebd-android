@@ -60,6 +60,12 @@ class AuthRepository @Inject constructor(
         try {
             emit(Resource.Loading())
             
+            // Validate required fields per web API
+            if (phone.isNullOrBlank() || companyName.isNullOrBlank()) {
+                emit(Resource.Error("Phone and Company Name are required"))
+                return@flow
+            }
+            
             val userType = if (isB2B) 
                 com.skyzonebd.android.data.model.UserType.WHOLESALE 
             else 

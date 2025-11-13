@@ -137,9 +137,9 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     val name: String,
-    val phone: String? = null,
-    val userType: UserType = UserType.RETAIL,
-    val companyName: String? = null
+    val phone: String,          // Required by web API
+    val companyName: String,    // Required by web API
+    val userType: UserType = UserType.RETAIL
 )
 
 data class AuthResponse(

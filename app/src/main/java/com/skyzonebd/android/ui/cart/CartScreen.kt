@@ -28,7 +28,7 @@ import com.skyzonebd.android.ui.theme.*
 @Composable
 fun CartScreen(
     navController: NavController,
-    viewModel: CartViewModel = hiltViewModel(),
+    viewModel: CartViewModel,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
@@ -41,10 +41,8 @@ fun CartScreen(
         viewModel.updatePricesForUserType(userType)
     }
     
-    val totalSavings = viewModel.getTotalSavings(userType)
-    val shipping = if (totalAmount > 0) 50.0 else 0.0
-    val tax = totalAmount * 0.05
-    val total = totalAmount + shipping + tax
+    val totalSavings = viewModel.getTotalSavings()
+    val total = totalAmount
     
     Scaffold(
         topBar = {
@@ -109,8 +107,6 @@ fun CartScreen(
                 item {
                     OrderSummaryCard(
                         subtotal = totalAmount,
-                        shipping = shipping,
-                        tax = tax,
                         total = total,
                         totalSavings = totalSavings
                     )
@@ -153,7 +149,7 @@ fun EmptyCartView(
             Text(
                 text = "Add some products to get started",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(32.dp))
             Button(
@@ -202,7 +198,8 @@ fun CartItemCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -223,7 +220,7 @@ fun CartItemCard(
                         Text(
                             text = "৳${item.product.retailPrice}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textDecoration = TextDecoration.LineThrough
                         )
                     }
@@ -236,24 +233,57 @@ fun CartItemCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Quantity Controls
+                    // Quantity Controls with TextField
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        var quantityText by remember(item.quantity) { 
+                            mutableStateOf(item.quantity.toString()) 
+                        }
+                        
                         IconButton(
-                            onClick = onDecrement,
+                            onClick = {
+                                onDecrement()
+                                quantityText = (item.quantity - 1).coerceAtLeast(item.product.moq ?: 1).toString()
+                            },
                             modifier = Modifier.size(32.dp),
                             enabled = item.quantity > (item.product.moq ?: 1)
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = "Decrease")
                         }
                         
-                        Text(
-                            text = item.quantity.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                        // Editable TextField
+                        OutlinedTextField(
+                            value = quantityText,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
+                                    quantityText = newValue
+                                    val newQty = newValue.toIntOrNull()
+                                    if (newQty != null) {
+                                        val minQty = item.product.moq ?: 1
+                                        val maxQty = item.product.stock
+                                        if (newQty in minQty..maxQty) {
+                                            onQuantityChange(newQty)
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.width(70.dp),
+                            textStyle = MaterialTheme.typography.titleMedium.copy(
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            ),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
                         )
                         
                         IconButton(
-                            onClick = onIncrement,
+                            onClick = {
+                                onIncrement()
+                                quantityText = (item.quantity + 1).coerceAtMost(item.product.stock).toString()
+                            },
                             modifier = Modifier.size(32.dp),
                             enabled = item.quantity < item.product.stock
                         ) {
@@ -298,8 +328,6 @@ fun CartItemCard(
 @Composable
 fun OrderSummaryCard(
     subtotal: Double,
-    shipping: Double,
-    tax: Double,
     total: Double,
     totalSavings: Double
 ) {
@@ -310,18 +338,16 @@ fun OrderSummaryCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Order Summary",
+                text = "Cart Total",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            OrderSummaryRow("Subtotal", subtotal)
-            OrderSummaryRow("Shipping", shipping)
-            OrderSummaryRow("Tax (5%)", tax)
-            
             if (totalSavings > 0) {
+                OrderSummaryRow("Original Price", subtotal + totalSavings)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -329,7 +355,7 @@ fun OrderSummaryCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "You Save (Wholesale)",
+                        text = "Wholesale Discount",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.Green
                     )
@@ -340,9 +366,9 @@ fun OrderSummaryCard(
                         color = Color.Green
                     )
                 }
+                
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
-            
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -352,7 +378,8 @@ fun OrderSummaryCard(
                 Text(
                     text = "Total",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "৳${"%.2f".format(total)}",
@@ -418,7 +445,7 @@ fun CheckoutBottomBar(
                     Text(
                         text = "Total",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "৳${"%.2f".format(total)}",
@@ -444,3 +471,4 @@ fun CheckoutBottomBar(
         }
     }
 }
+

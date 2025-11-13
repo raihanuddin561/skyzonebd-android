@@ -26,9 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.skyzonebd.android.data.model.Category
 import com.skyzonebd.android.data.model.HeroSlide
 import com.skyzonebd.android.data.model.Product
 import com.skyzonebd.android.data.model.UserType
@@ -44,12 +46,15 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    cartViewModel: com.skyzonebd.android.ui.cart.CartViewModel
 ) {
     val heroSlidesState by viewModel.heroSlides.collectAsState()
     val featuredProductsState by viewModel.featuredProducts.collectAsState()
     val allProductsState by viewModel.allProducts.collectAsState()
+    val categoriesState by viewModel.categories.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val cartItemCount by cartViewModel.itemCount.collectAsState()
     
     Scaffold(
         topBar = {
@@ -65,14 +70,38 @@ fun HomeScreen(
                     IconButton(onClick = { navController.navigate(Screen.Search.route) }) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = { /* Navigate to notifications */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                    com.skyzonebd.android.ui.common.CartIconWithBadge(
+                        itemCount = cartItemCount,
+                        onClick = { navController.navigate(Screen.Cart.route) }
+                    )
+                    
+                    // Show Login/Register for guest users
+                    if (currentUser == null) {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Login.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Login",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Profile.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -114,7 +143,12 @@ fun HomeScreen(
                     title = "Categories",
                     onSeeAllClick = { navController.navigate(Screen.Categories.route) }
                 )
-                CategoryRow()
+                CategoryRow(
+                    categoriesState = categoriesState,
+                    onCategoryClick = { category ->
+                        navController.navigate(Screen.CategoryProducts.createRoute(category.slug))
+                    }
+                )
             }
             
             // Featured Products
@@ -151,7 +185,7 @@ fun HomeScreen(
                                 Text(
                                     text = "No featured products available",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = TextSecondary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -220,7 +254,7 @@ fun HomeScreen(
                                 Text(
                                     text = "No products available",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = TextSecondary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -489,7 +523,9 @@ fun HeroSlideItem(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = onClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     ) {
                         Text(slide.buttonText, color = bgColor)
                     }
@@ -548,7 +584,8 @@ fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         if (onSeeAllClick != null) {
             TextButton(onClick = onSeeAllClick) {
@@ -564,33 +601,97 @@ fun SectionHeader(
 }
 
 @Composable
-fun CategoryRow() {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
-    ) {
-        items(5) { index ->
-            CategoryCard("Category ${index + 1}")
+fun CategoryRow(
+    categoriesState: Resource<List<Category>>?,
+    onCategoryClick: (Category) -> Unit
+) {
+    when (categoriesState) {
+        is Resource.Success -> {
+            val categories = categoriesState.data ?: emptyList()
+            if (categories.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(categories.take(6)) { category ->
+                        CategoryCard(
+                            category = category,
+                            onClick = { onCategoryClick(category) }
+                        )
+                    }
+                }
+            }
         }
+        is Resource.Loading -> {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                items(3) {
+                    Box(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(100.dp)
+                            .background(BackgroundLight, RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+        }
+        else -> {} // Error or null - just don't show categories
     }
 }
 
 @Composable
-fun CategoryCard(name: String) {
+fun CategoryCard(
+    category: Category,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .width(100.dp)
-            .height(100.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundLight)
+            .height(120.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // Category Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = com.skyzonebd.android.ui.common.getCategoryIcon(category.name),
+                    contentDescription = category.name,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Category Name
             Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                text = category.name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -604,70 +705,149 @@ fun ProductCard(
 ) {
     Card(
         modifier = Modifier
-            .width(180.dp)
+            .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
-        Column {
+        Column(modifier = Modifier.fillMaxWidth()) {
             // Product Image
-            AsyncImage(
-                model = product.imageUrl,
-                contentDescription = product.name,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .background(BackgroundLight),
-                contentScale = ContentScale.Crop
-            )
-            
-            Column(modifier = Modifier.padding(12.dp)) {
-                // Product Name
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    .height(180.dp)
+            ) {
+                AsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = product.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Price
-                val displayPrice = product.getDisplayPrice(userType)
-                Text(
-                    text = "৳${displayPrice}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = PriceColor
-                )
-                
-                // Sale/Discount
-                product.getDiscountPercentage()?.let { discount ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                // Featured badge
+                if (product.isFeatured) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp),
+                        color = Primary,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
                         Text(
-                            text = "৳${product.retailPrice}",
-                            style = MaterialTheme.typography.bodySmall,
-                            textDecoration = TextDecoration.LineThrough,
-                            color = TextSecondary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "$discount% OFF",
+                            text = "FEATURED",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = SalePriceColor,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
                 
+                // Discount badge
+                product.getDiscountPercentage()?.let { discount ->
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        color = SalePriceColor,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "-$discount%",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                // Product Name - Theme-aware color for dark mode
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 20.sp
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Price Section
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val displayPrice = product.getDisplayPrice(userType)
+                    Text(
+                        text = "৳${String.format("%.0f", displayPrice)}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary
+                    )
+                    
+                    // Original price strikethrough if discounted
+                    if (product.getDiscountPercentage() != null && displayPrice < product.retailPrice) {
+                        Text(
+                            text = "৳${String.format("%.0f", product.retailPrice)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textDecoration = TextDecoration.LineThrough,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Stock status
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (product.stock > 0) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                        contentDescription = null,
+                        tint = if (product.stock > 0) Success else Error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = if (product.stock > 0) "In Stock (${product.stock})" else "Out of Stock",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (product.stock > 0) Success else Error,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
                 // Wholesale indicator
                 if (userType == UserType.WHOLESALE && product.wholesaleEnabled) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "MOQ: ${product.wholesaleMOQ} units",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = WholesalePriceColor
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Business,
+                            contentDescription = null,
+                            tint = Secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "MOQ: ${product.wholesaleMOQ} units",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Secondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -695,7 +875,7 @@ fun ErrorMessage(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
@@ -703,3 +883,4 @@ fun ErrorMessage(
         }
     }
 }
+

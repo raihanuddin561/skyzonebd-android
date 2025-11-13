@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.skyzonebd.android.BuildConfig
+import com.skyzonebd.android.data.local.CartPreferences
 import com.skyzonebd.android.data.local.PreferencesManager
 import com.skyzonebd.android.data.remote.ApiService
 import com.skyzonebd.android.data.remote.AuthInterceptor
@@ -28,6 +29,8 @@ object NetworkModule {
     fun provideGson(): Gson {
         return GsonBuilder()
             .setLenient()
+            .setFieldNamingPolicy(com.google.gson.FieldNamingPolicy.IDENTITY)
+            .serializeNulls()
             .create()
     }
     
@@ -81,5 +84,14 @@ object NetworkModule {
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideCartPreferences(
+        @ApplicationContext context: Context,
+        gson: Gson
+    ): CartPreferences {
+        return CartPreferences(context, gson)
     }
 }

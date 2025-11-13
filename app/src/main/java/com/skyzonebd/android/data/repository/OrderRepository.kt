@@ -1,5 +1,6 @@
 package com.skyzonebd.android.data.repository
 
+import android.util.Log
 import com.skyzonebd.android.data.model.CreateOrderRequest
 import com.skyzonebd.android.data.model.Order
 import com.skyzonebd.android.data.model.OrdersResponse
@@ -14,6 +15,10 @@ import javax.inject.Singleton
 class OrderRepository @Inject constructor(
     private val apiService: ApiService
 ) {
+    
+    companion object {
+        private const val TAG = "OrderRepository"
+    }
     
     fun getOrders(
         page: Int = 1,
@@ -68,16 +73,28 @@ class OrderRepository @Inject constructor(
             
             if (response.isSuccessful) {
                 val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    emit(Resource.Success(apiResponse.data))
+                
+                if (apiResponse != null) {
+                    val orderResponse = apiResponse.data
+                    val order = orderResponse?.order
+                    
+                    if (apiResponse.success && order != null) {
+                        emit(Resource.Success(order))
+                    } else {
+                        val errorMsg = apiResponse.message ?: apiResponse.error ?: "Failed to create order"
+                        emit(Resource.Error(errorMsg))
+                    }
                 } else {
-                    emit(Resource.Error(apiResponse?.message ?: apiResponse?.error ?: "Failed to create order"))
+                    emit(Resource.Error("Empty response from server"))
                 }
             } else {
-                emit(Resource.Error("Failed to create order: ${response.message()}"))
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = "Failed to create order: ${response.message()}, Body: $errorBody"
+                emit(Resource.Error(errorMsg))
             }
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Network error occurred"))
+            val errorMsg = e.message ?: "Network error occurred"
+            emit(Resource.Error(errorMsg))
         }
     }
     

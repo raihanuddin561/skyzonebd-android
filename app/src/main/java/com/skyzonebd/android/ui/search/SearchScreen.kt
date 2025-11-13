@@ -76,8 +76,8 @@ fun SearchScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -101,7 +101,7 @@ fun SearchScreen(
                             Icons.Default.Search,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -117,7 +117,7 @@ fun SearchScreen(
                         Text(
                             text = "Find what you're looking for",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -146,7 +146,7 @@ fun SearchScreen(
                                 Icons.Default.SearchOff,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             Spacer(modifier = Modifier.height(16.dp))
@@ -162,7 +162,7 @@ fun SearchScreen(
                             Text(
                                 text = "Try searching with different keywords",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {
@@ -213,7 +213,7 @@ fun SearchScreen(
                         Text(
                             text = (searchResults as Resource.Error).message ?: "Unknown error",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))
@@ -243,7 +243,9 @@ fun SearchProductItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -286,7 +288,7 @@ fun SearchProductItem(
                             text = "৳${product.retailPrice}",
                             style = MaterialTheme.typography.bodySmall,
                             textDecoration = TextDecoration.LineThrough,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.width(4.dp))
@@ -337,3 +339,4 @@ fun SearchProductItem(
         }
     }
 }
+

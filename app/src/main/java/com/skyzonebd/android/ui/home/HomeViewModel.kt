@@ -3,10 +3,12 @@ package com.skyzonebd.android.ui.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.skyzonebd.android.data.model.Category
 import com.skyzonebd.android.data.model.HeroSlide
 import com.skyzonebd.android.data.model.Product
 import com.skyzonebd.android.data.model.ProductsResponse
 import com.skyzonebd.android.data.remote.ApiService
+import com.skyzonebd.android.data.repository.CategoryRepository
 import com.skyzonebd.android.data.repository.ProductRepository
 import com.skyzonebd.android.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val productRepository: ProductRepository,
+    private val categoryRepository: CategoryRepository,
     private val apiService: ApiService
 ) : ViewModel() {
     
@@ -33,9 +36,13 @@ class HomeViewModel @Inject constructor(
     private val _allProducts = MutableStateFlow<Resource<ProductsResponse>?>(null)
     val allProducts: StateFlow<Resource<ProductsResponse>?> = _allProducts.asStateFlow()
     
+    private val _categories = MutableStateFlow<Resource<List<Category>>?>(null)
+    val categories: StateFlow<Resource<List<Category>>?> = _categories.asStateFlow()
+    
     init {
         Log.d(TAG, "HomeViewModel initialized")
         loadHeroSlides()
+        loadCategories()
         loadFeaturedProducts()
         loadAllProducts()
     }
@@ -73,19 +80,48 @@ class HomeViewModel @Inject constructor(
         }
     }
     
+    fun loadCategories() {
+        Log.d(TAG, "loadCategories - Starting")
+        viewModelScope.launch {
+            categoryRepository.getCategories().collect { resource ->
+                Log.d(TAG, "loadCategories - Resource: ${resource::class.simpleName}")
+                _categories.value = resource
+            }
+        }
+    }
+    
     fun loadFeaturedProducts() {
         Log.d(TAG, "loadFeaturedProducts - Starting")
+        _featuredProducts.value = Resource.Loading()
+        Log.d(TAG, "loadFeaturedProducts - Set loading state")
         viewModelScope.launch {
-            productRepository.getFeaturedProducts(limit = 10).collect { resource ->
-                Log.d(TAG, "loadFeaturedProducts - Resource: ${resource::class.simpleName}")
-                _featuredProducts.value = resource
+            try {
+                productRepository.getFeaturedProducts(limit = 10).collect { resource ->
+                    Log.d(TAG, "loadFeaturedProducts - Collected resource: ${resource::class.simpleName}")
+                    when (resource) {
+                        is Resource.Success -> {
+                            val count = resource.data?.products?.size ?: 0
+                            Log.d(TAG, "loadFeaturedProducts - Success! Products count: $count")
+                        }
+                        is Resource.Error -> {
+                            Log.e(TAG, "loadFeaturedProducts - Error: ${resource.message}")
+                        }
+                        is Resource.Loading -> {
+                            Log.d(TAG, "loadFeaturedProducts - Loading from repository...")
+                        }
+                    }
+                    _featuredProducts.value = resource
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadFeaturedProducts - Exception: ${e.message}", e)
+                _featuredProducts.value = Resource.Error(e.message ?: "Failed to load featured products")
             }
         }
     }
     
     fun loadAllProducts(
         page: Int = 1,
-        categoryId: String? = null,
+        categorySlug: String? = null,
         search: String? = null
     ) {
         Log.d(TAG, "loadAllProducts - Starting: page=$page")
@@ -93,7 +129,7 @@ class HomeViewModel @Inject constructor(
             productRepository.getProducts(
                 page = page,
                 limit = 20,
-                categoryId = categoryId,
+                categorySlug = categorySlug,
                 search = search
             ).collect { resource ->
                 Log.d(TAG, "loadAllProducts - Resource: ${resource::class.simpleName}")
@@ -104,6 +140,7 @@ class HomeViewModel @Inject constructor(
     
     fun refresh() {
         loadHeroSlides()
+        loadCategories()
         loadFeaturedProducts()
         loadAllProducts()
     }

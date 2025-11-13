@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -16,7 +17,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.skyzonebd.android.data.model.Address
 import com.skyzonebd.android.data.model.CartItem
+import com.skyzonebd.android.data.model.PaymentMethod
 import com.skyzonebd.android.ui.cart.CartViewModel
+import com.skyzonebd.android.ui.navigation.Screen
 import com.skyzonebd.android.ui.theme.*
 import com.skyzonebd.android.util.Resource
 
@@ -25,32 +28,102 @@ import com.skyzonebd.android.util.Resource
 fun CheckoutScreen(
     navController: NavController,
     checkoutViewModel: CheckoutViewModel = hiltViewModel(),
-    cartViewModel: CartViewModel = hiltViewModel()
+    cartViewModel: CartViewModel,
+    authViewModel: com.skyzonebd.android.ui.auth.AuthViewModel = hiltViewModel()
 ) {
     val cartItems by cartViewModel.cartItems.collectAsState()
     val totalAmount by cartViewModel.totalAmount.collectAsState()
-    val shippingAddress by checkoutViewModel.shippingAddress.collectAsState()
     val paymentMethod by checkoutViewModel.paymentMethod.collectAsState()
     val orderState by checkoutViewModel.orderState.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
     
     var note by remember { mutableStateOf("") }
-    var showAddressDialog by remember { mutableStateOf(false) }
+    var shippingAddressText by remember { mutableStateOf("") }
+    var billingAddressText by remember { mutableStateOf("") }
+    
+    // Guest user fields
+    var guestName by remember { mutableStateOf("") }
+    var guestEmail by remember { mutableStateOf("") }
+    var guestMobile by remember { mutableStateOf("") }
+    var guestCompany by remember { mutableStateOf("") }
+    
+    val isGuest = currentUser == null
+    
+    // Get available payment methods (all for now)
+    val availablePaymentMethods = listOf(
+        PaymentMethod.CASH_ON_DELIVERY,
+        PaymentMethod.BKASH,
+        PaymentMethod.NAGAD,
+        PaymentMethod.ROCKET,
+        PaymentMethod.BANK_TRANSFER,
+        PaymentMethod.CREDIT_CARD
+    )
+    
+    // Track if navigation has been triggered to prevent re-navigation
+    // Using rememberSaveable to persist across configuration changes
+    var hasNavigated by rememberSaveable { mutableStateOf(false) }
     
     // Handle order creation result
     LaunchedEffect(orderState) {
-        when (orderState) {
-            is Resource.Success -> {
-                // Clear cart and navigate to order confirmation
+        val state = orderState
+        android.util.Log.d("CheckoutScreen", "LaunchedEffect triggered: state=$state, hasNavigated=$hasNavigated")
+        
+        if (state is Resource.Success && !hasNavigated) {
+            val order = state.data
+            android.util.Log.d("CheckoutScreen", "Order received: id=${order?.id}, orderNumber=${order?.orderNumber}")
+            android.util.Log.d("CheckoutScreen", "Order object: $order")
+            
+            if (order != null && !order.id.isNullOrBlank()) {
+                hasNavigated = true
+                android.util.Log.d("CheckoutScreen", "Starting navigation process...")
+                
+                // Store order for success screen FIRST (before clearing cart)
+                com.skyzonebd.android.util.OrderCache.setLastOrder(order)
+                android.util.Log.d("CheckoutScreen", "Order stored in cache")
+                
+                // Clear cart
                 cartViewModel.clearCart()
-                navController.navigate("order_success/${(orderState as Resource.Success).data?.id}") {
-                    popUpTo("checkout") { inclusive = true }
+                android.util.Log.d("CheckoutScreen", "Cart cleared")
+                
+                // Small delay to ensure order is saved
+                kotlinx.coroutines.delay(100)
+                
+                // Navigate
+                try {
+                    val route = Screen.OrderSuccess.createRoute(order.id)
+                    android.util.Log.d("CheckoutScreen", "Navigating to route: $route")
+                    android.util.Log.d("CheckoutScreen", "Order ID: ${order.id}")
+                    android.util.Log.d("CheckoutScreen", "Order Number: ${order.orderNumber}")
+                    
+                    // Post navigation to next frame to avoid composition issues
+                    kotlinx.coroutines.delay(200)
+                    
+                    navController.navigate(route) {
+                        // Remove checkout screen from backstack
+                        popUpTo(Screen.Checkout.route) { 
+                            inclusive = true 
+                        }
+                        // Avoid multiple instances of success screen
+                        launchSingleTop = true
+                    }
+                    android.util.Log.d("CheckoutScreen", "Navigation called successfully")
+                    
+                    // Reset order state after navigation to prevent re-triggering
+                    kotlinx.coroutines.delay(100)
+                    checkoutViewModel.resetOrderState()
+                    android.util.Log.d("CheckoutScreen", "Order state reset")
+                } catch (e: Exception) {
+                    android.util.Log.e("CheckoutScreen", "Navigation failed with exception: ${e.message}", e)
+                    e.printStackTrace()
+                    hasNavigated = false // Reset flag if navigation failed
                 }
-                checkoutViewModel.resetOrderState()
+            } else {
+                android.util.Log.e("CheckoutScreen", "Order is null or has null ID! Order: $order")
             }
-            is Resource.Error -> {
-                // Error is shown in UI
-            }
-            else -> {}
+        } else if (state is Resource.Error) {
+            android.util.Log.e("CheckoutScreen", "Order creation error: ${state.message}")
+            // Reset navigation flag on error so user can retry
+            hasNavigated = false
         }
     }
     
@@ -65,8 +138,8 @@ fun CheckoutScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = androidx.compose.ui.graphics.Color.White,
-                    navigationIconContentColor = androidx.compose.ui.graphics.Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -74,13 +147,37 @@ fun CheckoutScreen(
             CheckoutBottomBar(
                 totalAmount = totalAmount,
                 onPlaceOrder = {
-                    checkoutViewModel.placeOrder(
-                        items = cartItems,
-                        totalAmount = totalAmount,
-                        note = note.takeIf { it.isNotBlank() }
-                    )
+                    // If only one address is provided, use it for both
+                    val finalShippingAddress = shippingAddressText.ifBlank { billingAddressText }
+                    val finalBillingAddress = billingAddressText.ifBlank { shippingAddressText }
+                    
+                    if (isGuest) {
+                        // Guest checkout - validate guest info
+                        checkoutViewModel.placeGuestOrder(
+                            items = cartItems,
+                            totalAmount = totalAmount,
+                            note = note.takeIf { it.isNotBlank() },
+                            guestName = guestName,
+                            guestEmail = guestEmail,
+                            guestMobile = guestMobile,
+                            guestCompany = guestCompany.takeIf { it.isNotBlank() },
+                            shippingAddress = finalShippingAddress,
+                            billingAddress = finalBillingAddress
+                        )
+                    } else {
+                        // Registered user checkout
+                        checkoutViewModel.placeOrder(
+                            items = cartItems,
+                            totalAmount = totalAmount,
+                            note = note.takeIf { it.isNotBlank() },
+                            shippingAddress = finalShippingAddress,
+                            billingAddress = finalBillingAddress
+                        )
+                    }
                 },
-                enabled = shippingAddress != null && orderState !is Resource.Loading
+                enabled = (shippingAddressText.isNotBlank() || billingAddressText.isNotBlank()) &&
+                        orderState !is Resource.Loading &&
+                        (!isGuest || (guestName.isNotBlank() && guestMobile.isNotBlank()))
             )
         }
     ) { padding ->
@@ -91,25 +188,98 @@ fun CheckoutScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Guest User Information (if not logged in)
+            if (isGuest) {
+                item {
+                    SectionCard(
+                        title = "Your Information",
+                        icon = Icons.Default.Person
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = guestName,
+                                onValueChange = { guestName = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Full Name *") },
+                                singleLine = true
+                            )
+                            
+                            OutlinedTextField(
+                                value = guestEmail,
+                                onValueChange = { guestEmail = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Email (Optional)") },
+                                singleLine = true
+                            )
+                            
+                            OutlinedTextField(
+                                value = guestMobile,
+                                onValueChange = { guestMobile = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Mobile Number *") },
+                                singleLine = true,
+                                placeholder = { Text("+880-1711-123456") }
+                            )
+                            
+                            OutlinedTextField(
+                                value = guestCompany,
+                                onValueChange = { guestCompany = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Company Name (Optional)") },
+                                singleLine = true
+                            )
+                        }
+                    }
+                }
+            }
+            
             // Shipping Address Section
             item {
                 SectionCard(
                     title = "Shipping Address",
                     icon = Icons.Default.LocationOn
                 ) {
-                    if (shippingAddress != null) {
-                        AddressCard(
-                            address = shippingAddress!!,
-                            onEdit = { showAddressDialog = true }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = shippingAddressText,
+                            onValueChange = { shippingAddressText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Enter your complete shipping address...") },
+                            minLines = 4,
+                            maxLines = 6
                         )
-                    } else {
-                        OutlinedButton(
-                            onClick = { showAddressDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Add Shipping Address")
+                        if (shippingAddressText.isNotBlank() && billingAddressText.isBlank()) {
+                            Text(
+                                text = "ℹ This address will be used for billing too",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Primary
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Billing Address Section
+            item {
+                SectionCard(
+                    title = "Billing Address",
+                    icon = Icons.Default.LocationOn
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = billingAddressText,
+                            onValueChange = { billingAddressText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Enter your billing address (optional if same as shipping)...") },
+                            minLines = 4,
+                            maxLines = 6
+                        )
+                        if (billingAddressText.isNotBlank() && shippingAddressText.isBlank()) {
+                            Text(
+                                text = "ℹ This address will be used for shipping too",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Primary
+                            )
                         }
                     }
                 }
@@ -122,7 +292,7 @@ fun CheckoutScreen(
                     icon = Icons.Default.Payment
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PaymentMethod.values().forEach { method ->
+                        availablePaymentMethods.forEach { method ->
                             PaymentMethodOption(
                                 method = method,
                                 selected = paymentMethod == method,
@@ -177,6 +347,49 @@ fun CheckoutScreen(
                     Card(
                         colors = CardDefaults.cardColors(containerColor = ErrorLight)
                     ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = Error
+                                )
+                                Text(
+                                    "Failed to Place Order",
+                                    color = Error,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                (orderState as Resource.Error).message ?: "Network error occurred",
+                                color = Error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "Please check your internet connection and try again.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Loading indicator
+            if (orderState is Resource.Loading) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = PrimaryLight)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -184,33 +397,47 @@ fun CheckoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Default.Error,
-                                contentDescription = null,
-                                tint = Error
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             Text(
-                                (orderState as Resource.Error).message ?: "Failed to place order",
-                                color = Error,
+                                "Processing your order...",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                     }
                 }
             }
-        }
-    }
-    
-    // Address Dialog
-    if (showAddressDialog) {
-        AddressInputDialog(
-            address = shippingAddress,
-            onDismiss = { showAddressDialog = false },
-            onSave = { address ->
-                checkoutViewModel.setShippingAddress(address)
-                showAddressDialog = false
+            
+            // Success indicator - for debugging
+            if (orderState is Resource.Success) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Success.copy(alpha = 0.2f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                "Order Created!",
+                                color = Success,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Order ID: ${(orderState as Resource.Success).data?.id}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "Navigating to success page...",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
             }
-        )
+        }
     }
 }
 
@@ -222,7 +449,9 @@ fun SectionCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -240,47 +469,6 @@ fun SectionCard(
                 )
             }
             content()
-        }
-    }
-}
-
-@Composable
-fun AddressCard(
-    address: Address,
-    onEdit: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = PrimaryLight)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        address.name ?: "Shipping Address",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(address.phone ?: "", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(4.dp))
-                    Text(address.street, style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        "${address.city}, ${address.state} ${address.postalCode}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(address.country, style = MaterialTheme.typography.bodyMedium)
-                }
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "Edit", tint = Primary)
-                }
-            }
         }
     }
 }
@@ -317,17 +505,36 @@ fun PaymentMethodOption(
                     when (method) {
                         PaymentMethod.CASH_ON_DELIVERY -> Icons.Default.Money
                         PaymentMethod.BANK_TRANSFER -> Icons.Default.AccountBalance
-                        PaymentMethod.MOBILE_BANKING -> Icons.Default.PhoneAndroid
+                        PaymentMethod.BKASH, PaymentMethod.NAGAD, PaymentMethod.ROCKET -> Icons.Default.PhoneAndroid
                         PaymentMethod.CREDIT_CARD -> Icons.Default.CreditCard
+                        PaymentMethod.INVOICE_NET30, PaymentMethod.INVOICE_NET60 -> Icons.Default.Description
                     },
                     contentDescription = null,
                     tint = if (selected) Primary else OnSurface
                 )
-                Text(
-                    method.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                )
+                Column {
+                    Text(
+                        when (method) {
+                            PaymentMethod.CASH_ON_DELIVERY -> "Cash on Delivery"
+                            PaymentMethod.BANK_TRANSFER -> "Bank Transfer"
+                            PaymentMethod.BKASH -> "bKash"
+                            PaymentMethod.NAGAD -> "Nagad"
+                            PaymentMethod.ROCKET -> "Rocket"
+                            PaymentMethod.CREDIT_CARD -> "Credit Card"
+                            PaymentMethod.INVOICE_NET30 -> "Invoice (Net 30)"
+                            PaymentMethod.INVOICE_NET60 -> "Invoice (Net 60)"
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                    )
+                    if (method == PaymentMethod.INVOICE_NET30 || method == PaymentMethod.INVOICE_NET60) {
+                        Text(
+                            "For wholesale customers only",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant
+                        )
+                    }
+                }
             }
             RadioButton(
                 selected = selected,
@@ -341,7 +548,9 @@ fun PaymentMethodOption(
 fun CheckoutItemCard(item: CartItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Row(
             modifier = Modifier
@@ -471,117 +680,4 @@ fun CheckoutBottomBar(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddressInputDialog(
-    address: Address?,
-    onDismiss: () -> Unit,
-    onSave: (Address) -> Unit
-) {
-    var name by remember { mutableStateOf(address?.name ?: "") }
-    var phone by remember { mutableStateOf(address?.phone ?: "") }
-    var street by remember { mutableStateOf(address?.street ?: "") }
-    var city by remember { mutableStateOf(address?.city ?: "") }
-    var state by remember { mutableStateOf(address?.state ?: "") }
-    var postalCode by remember { mutableStateOf(address?.postalCode ?: "") }
-    var country by remember { mutableStateOf(address?.country ?: "Bangladesh") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (address == null) "Add Address" else "Edit Address") },
-        text = {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Full Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text("Phone Number") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = street,
-                        onValueChange = { street = it },
-                        label = { Text("Street Address") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = city,
-                        onValueChange = { city = it },
-                        label = { Text("City") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = state,
-                        onValueChange = { state = it },
-                        label = { Text("State/Division") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = postalCode,
-                        onValueChange = { postalCode = it },
-                        label = { Text("Postal Code") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = country,
-                        onValueChange = { country = it },
-                        label = { Text("Country") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onSave(
-                        Address(
-                            id = address?.id ?: "",
-                            userId = address?.userId ?: "",
-                            name = name,
-                            phone = phone,
-                            street = street,
-                            city = city,
-                            state = state,
-                            postalCode = postalCode,
-                            country = country,
-                            isDefault = address?.isDefault ?: false
-                        )
-                    )
-                },
-                enabled = name.isNotBlank() && phone.isNotBlank() && street.isNotBlank() &&
-                        city.isNotBlank() && state.isNotBlank() && postalCode.isNotBlank()
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }

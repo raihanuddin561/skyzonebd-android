@@ -40,7 +40,7 @@ fun ProfileScreen(
                 title = { Text("Profile") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -81,9 +81,9 @@ fun ProfileScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    if (currentUser != null) {
+                    currentUser?.let { user ->
                         Text(
-                            text = currentUser!!.name,
+                            text = user.name,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -91,21 +91,21 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         
                         Text(
-                            text = currentUser!!.email,
+                            text = user.email,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         // User Type Badge
-                        val userTypeText = when (currentUser!!.userType) {
+                        val userTypeText = when (user.userType) {
                             UserType.WHOLESALE -> "Wholesale Customer"
                             UserType.RETAIL -> "Retail Customer"
                             UserType.GUEST -> "Guest User"
                         }
                         
-                        val badgeColor = when (currentUser!!.userType) {
+                        val badgeColor = when (user.userType) {
                             UserType.WHOLESALE -> Secondary
                             UserType.RETAIL -> Primary
                             UserType.GUEST -> Color.Gray
@@ -123,7 +123,7 @@ fun ProfileScreen(
                                 color = Color.White
                             )
                         }
-                    } else {
+                    } ?: run {
                         Text(
                             text = "Guest User",
                             style = MaterialTheme.typography.headlineSmall,
@@ -168,6 +168,18 @@ fun ProfileScreen(
                         title = "Addresses",
                         subtitle = "Manage delivery addresses",
                         onClick = { navController.navigate(Screen.Addresses.route) }
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Support Section
+                ProfileSection(title = "Support") {
+                    ProfileMenuItem(
+                        icon = Icons.Default.Phone,
+                        title = "Contact Us",
+                        subtitle = "01918744551",
+                        onClick = { /* TODO: Open dialer */ }
                     )
                 }
                 
@@ -240,7 +252,7 @@ fun ProfileScreen(
                         Text(
                             text = "Track orders, save addresses, and enjoy personalized shopping",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -296,7 +308,9 @@ fun ProfileSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 content()
@@ -339,14 +353,15 @@ fun ProfileMenuItem(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = Color.Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+

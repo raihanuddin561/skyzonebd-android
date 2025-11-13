@@ -27,12 +27,26 @@ import java.util.*
 @Composable
 fun OrdersScreen(
     navController: NavController,
-    viewModel: OrderViewModel = hiltViewModel()
+    viewModel: OrderViewModel = hiltViewModel(),
+    authViewModel: com.skyzonebd.android.ui.auth.AuthViewModel = hiltViewModel()
 ) {
     val ordersState by viewModel.orders.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val isGuest = currentUser == null
+    
+    // Redirect guest users to login
+    LaunchedEffect(isGuest) {
+        if (isGuest) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(Screen.Orders.route) { inclusive = true }
+            }
+        }
+    }
     
     LaunchedEffect(Unit) {
-        viewModel.loadOrders()
+        if (!isGuest) {
+            viewModel.loadOrders()
+        }
     }
     
     Scaffold(
@@ -46,8 +60,8 @@ fun OrdersScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -82,7 +96,7 @@ fun OrdersScreen(
                                 Icons.Default.ShoppingBag,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             Spacer(modifier = Modifier.height(16.dp))
@@ -98,7 +112,7 @@ fun OrdersScreen(
                             Text(
                                 text = "Start shopping to place your first order",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             Spacer(modifier = Modifier.height(24.dp))
@@ -178,7 +192,7 @@ fun OrdersScreen(
                         Text(
                             text = state.message ?: "Unknown error",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))
@@ -218,7 +232,9 @@ fun OrderCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -251,13 +267,13 @@ fun OrderCard(
                     Icons.Default.CalendarToday,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = Color.Gray
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = formatDate(order.createdAt),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -277,7 +293,7 @@ fun OrderCard(
                     Text(
                         text = "Items: ${order.orderItems.size}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     Spacer(modifier = Modifier.height(4.dp))
@@ -293,7 +309,7 @@ fun OrderCard(
                 Icon(
                     Icons.Default.ChevronRight,
                     contentDescription = "View Details",
-                    tint = Color.Gray
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -339,3 +355,4 @@ private fun formatDate(dateString: String): String {
         dateString
     }
 }
+

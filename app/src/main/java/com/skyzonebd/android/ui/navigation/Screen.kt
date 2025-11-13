@@ -9,8 +9,8 @@ sealed class Screen(val route: String) {
         fun createRoute(productId: String) = "product/$productId"
     }
     object Categories : Screen("categories")
-    object CategoryProducts : Screen("category/{categoryId}") {
-        fun createRoute(categoryId: String) = "category/$categoryId"
+    object CategoryProducts : Screen("category/{categorySlug}") {
+        fun createRoute(categorySlug: String) = "category/$categorySlug"
     }
     object Search : Screen("search")
     object Cart : Screen("cart")
@@ -25,6 +25,9 @@ sealed class Screen(val route: String) {
     object Orders : Screen("orders")
     object OrderDetail : Screen("order/{orderId}") {
         fun createRoute(orderId: String) = "order/$orderId"
+    }
+    object OrderSuccess : Screen("order_success/{orderId}") {
+        fun createRoute(orderId: String) = "order_success/$orderId"
     }
     object Wishlist : Screen("wishlist")
     object Addresses : Screen("addresses")

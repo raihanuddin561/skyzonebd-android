@@ -91,7 +91,10 @@ data class Product(
     
     // Metadata
     @SerializedName("categoryId")
-    val categoryId: String,
+    val categoryId: String? = null,
+    
+    @SerializedName("categorySlug")
+    val categorySlug: String? = null,
     
     @SerializedName("isActive")
     val isActive: Boolean = true,

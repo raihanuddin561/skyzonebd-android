@@ -26,8 +26,10 @@ import com.skyzonebd.android.data.model.Product
 import com.skyzonebd.android.data.model.UserType
 import com.skyzonebd.android.ui.auth.AuthViewModel
 import com.skyzonebd.android.ui.cart.CartViewModel
+import com.skyzonebd.android.ui.navigation.Screen
 import com.skyzonebd.android.ui.theme.*
 import com.skyzonebd.android.util.Resource
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,14 +38,17 @@ fun ProductDetailScreen(
     navController: NavController,
     viewModel: ProductDetailViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
-    cartViewModel: CartViewModel = hiltViewModel()
+    cartViewModel: CartViewModel
 ) {
     val productState by viewModel.product.collectAsState()
     val relatedProducts by viewModel.relatedProducts.collectAsState()
     val quantity by viewModel.quantity.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val cartItemCount by cartViewModel.itemCount.collectAsState()
     
     var selectedImageIndex by remember { mutableStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     
     LaunchedEffect(productId) {
         try {
@@ -54,6 +59,7 @@ fun ProductDetailScreen(
     }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Product Details") },
@@ -63,18 +69,45 @@ fun ProductDetailScreen(
                     }
                 },
                 actions = {
+                    com.skyzonebd.android.ui.common.CartIconWithBadge(
+                        itemCount = cartItemCount,
+                        onClick = { navController.navigate(Screen.Cart.route) }
+                    )
                     IconButton(onClick = { /* Share product */ }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                     IconButton(onClick = { /* Add to wishlist */ }) {
                         Icon(Icons.Default.FavoriteBorder, contentDescription = "Wishlist")
                     }
+                    
+                    // Show Login/Register for guest users
+                    if (currentUser == null) {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Login.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Login",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { navController.navigate(Screen.Profile.route) }
+                        ) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -88,13 +121,34 @@ fun ProductDetailScreen(
                         onAddToCart = {
                             if (viewModel.validateQuantity(product.moq)) {
                                 cartViewModel.addToCart(product, quantity)
-                                // Show snackbar or navigate to cart
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Added to cart",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            } else {
+                                scope.launch {
+                                    val moq = product.moq ?: 1
+                                    snackbarHostState.showSnackbar(
+                                        message = "Minimum order quantity is $moq",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
                             }
                         },
                         onBuyNow = {
                             if (viewModel.validateQuantity(product.moq)) {
                                 cartViewModel.addToCart(product, quantity)
-                                navController.navigate("checkout")
+                                navController.navigate(Screen.Checkout.route)
+                            } else {
+                                scope.launch {
+                                    val moq = product.moq ?: 1
+                                    snackbarHostState.showSnackbar(
+                                        message = "Minimum order quantity is $moq",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
                             }
                         }
                     )
@@ -204,7 +258,8 @@ fun ProductDetailScreen(
                         )
                         Text(
                             text = state.message ?: "Failed to load product",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Error
                         )
                         Button(onClick = { viewModel.loadProduct(productId) }) {
                             Text("Retry")
@@ -224,20 +279,45 @@ fun ImageGallery(
     onImageSelected: (Int) -> Unit
 ) {
     Column {
-        // Main Image
+        // Main Image with animated transition
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(400.dp)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (images.isNotEmpty()) {
                 AsyncImage(
                     model = images.getOrNull(selectedIndex) ?: images.first(),
                     contentDescription = "Product Image",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentScale = ContentScale.Fit
                 )
+                
+                // Image indicator
+                if (images.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        images.forEachIndexed { index, _ ->
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        color = if (index == selectedIndex) Color.White else Color.White.copy(alpha = 0.4f),
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    )
+                            )
+                        }
+                    }
+                }
             } else {
                 Icon(
                     Icons.Default.Image,
@@ -245,7 +325,7 @@ fun ImageGallery(
                     modifier = Modifier
                         .size(100.dp)
                         .align(Alignment.Center),
-                    tint = Color.Gray
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -259,17 +339,24 @@ fun ImageGallery(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(images.size) { index ->
-                    AsyncImage(
-                        model = images[index],
-                        contentDescription = "Thumbnail",
+                    Card(
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (index == selectedIndex) Primary.copy(alpha = 0.2f) else Color.Transparent)
-                            .padding(if (index == selectedIndex) 2.dp else 0.dp)
+                            .size(70.dp)
                             .clickable { onImageSelected(index) },
-                        contentScale = ContentScale.Crop
-                    )
+                        border = if (index == selectedIndex) 
+                            androidx.compose.foundation.BorderStroke(2.dp, Primary) 
+                        else null,
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = if (index == selectedIndex) 4.dp else 1.dp
+                        )
+                    ) {
+                        AsyncImage(
+                            model = images[index],
+                            contentDescription = "Thumbnail",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
         }
@@ -289,7 +376,8 @@ fun ProductInfo(
         Text(
             text = product.name,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface  // Theme-aware text color
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -302,7 +390,7 @@ fun ProductInfo(
                 Text(
                     text = "Brand: ${product.brand}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant  // Theme-aware secondary text
                 )
             }
             // Category display removed - API returns category as string ID, not object
@@ -329,7 +417,7 @@ fun ProductInfo(
                 Text(
                     text = "৳${product.retailPrice}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textDecoration = TextDecoration.LineThrough
                 )
             }
@@ -357,7 +445,7 @@ fun ProductInfo(
                 modifier = Modifier.size(20.dp)
             )
             Text(
-                text = if (product.stock > 0) "In Stock (${product.stock} available)" else "Out of Stock",
+                text = if (product.stock > 0) "In Stock" else "Out of Stock",
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (product.stock > 0) Color.Green else Color.Red
             )
@@ -396,59 +484,145 @@ fun QuantitySelector(
     onDecrement: () -> Unit,
     onQuantityChange: (Int) -> Unit
 ) {
+    var quantityText by remember(quantity) { mutableStateOf(quantity.toString()) }
+    var showError by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Text(
-                text = "Quantity",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(
-                    onClick = onDecrement,
-                    enabled = quantity > (moq ?: 1)
-                ) {
-                    Icon(Icons.Default.Remove, contentDescription = "Decrease")
-                }
-                
                 Text(
-                    text = quantity.toString(),
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "Quantity",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.widthIn(min = 40.dp)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                IconButton(
-                    onClick = onIncrement,
-                    enabled = quantity < stock
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Increase")
+                    IconButton(
+                        onClick = {
+                            onDecrement()
+                            quantityText = (quantity - 1).coerceAtLeast(moq ?: 1).toString()
+                        },
+                        enabled = quantity > (moq ?: 1)
+                    ) {
+                        Icon(
+                            Icons.Default.Remove,
+                            contentDescription = "Decrease",
+                            tint = if (quantity > (moq ?: 1)) Primary else Color.Gray
+                        )
+                    }
+                    
+                    // Editable TextField for quantity
+                    OutlinedTextField(
+                        value = quantityText,
+                        onValueChange = { newValue ->
+                            // Only allow digits
+                            if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
+                                quantityText = newValue
+                                val newQty = newValue.toIntOrNull()
+                                if (newQty != null) {
+                                    val minQty = moq ?: 1
+                                    when {
+                                        newQty < minQty -> {
+                                            showError = true
+                                        }
+                                        newQty > stock -> {
+                                            showError = true
+                                        }
+                                        else -> {
+                                            showError = false
+                                            onQuantityChange(newQty)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.width(80.dp),
+                        textStyle = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        ),
+                        singleLine = true,
+                        isError = showError,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            errorBorderColor = Error,
+                            errorTextColor = MaterialTheme.colorScheme.onSurface,
+                            errorContainerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
+                    
+                    IconButton(
+                        onClick = {
+                            onIncrement()
+                            quantityText = (quantity + 1).coerceAtMost(stock).toString()
+                        },
+                        enabled = quantity < stock
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Increase",
+                            tint = if (quantity < stock) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-        }
-        
-        if (moq != null && moq > 1) {
-            Text(
-                text = "MOQ: $moq units",
-                style = MaterialTheme.typography.bodySmall,
-                color = Secondary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+            
+            // Helper text
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (moq != null && moq > 1) {
+                    Text(
+                        text = "Min: $moq units",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (showError && quantity < moq) Error else Secondary
+                    )
+                }
+            }
+            
+            if (showError) {
+                val minQty = moq ?: 1
+                val errorMsg = when {
+                    quantity < minQty -> "Minimum order quantity is $minQty"
+                    quantity > stock -> "Only $stock units available"
+                    else -> ""
+                }
+                if (errorMsg.isNotEmpty()) {
+                    Text(
+                        text = errorMsg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Error,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -466,7 +640,8 @@ fun WholesaleTierPricing(tiers: List<com.skyzonebd.android.data.model.WholesaleT
             Text(
                 text = "Wholesale Tier Pricing",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -480,7 +655,8 @@ fun WholesaleTierPricing(tiers: List<com.skyzonebd.android.data.model.WholesaleT
                 ) {
                     Text(
                         text = "${tier.minQuantity}+ units",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "৳${tier.price}/unit",
@@ -512,13 +688,14 @@ fun ProductDescription(description: String?) {
             Text(
                 text = "Description",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -537,7 +714,8 @@ fun ProductSpecifications(product: Product) {
             Text(
                 text = "Specifications",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -564,12 +742,13 @@ fun SpecificationRow(label: String, value: String?) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -588,7 +767,8 @@ fun RelatedProducts(
         Text(
             text = "Related Products",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         Spacer(modifier = Modifier.height(12.dp))
@@ -597,10 +777,12 @@ fun RelatedProducts(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(products) { product ->
-                // Reuse ProductCard from HomeScreen
                 Box(modifier = Modifier.width(160.dp)) {
-                    // You'll need to import ProductCard from HomeScreen
-                    // or create a shared component
+                    com.skyzonebd.android.ui.home.ProductCard(
+                        product = product,
+                        userType = userType,
+                        onClick = { onProductClick(product) }
+                    )
                 }
             }
         }
@@ -652,3 +834,4 @@ fun BottomAddToCartBar(
         }
     }
 }
+

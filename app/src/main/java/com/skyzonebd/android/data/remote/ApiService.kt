@@ -30,7 +30,7 @@ interface ApiService {
     suspend fun getProducts(
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20,
-        @Query("categoryId") categoryId: String? = null,
+        @Query("category") categorySlug: String? = null,
         @Query("search") search: String? = null,
         @Query("isFeatured") isFeatured: Boolean? = null,
         @Query("minPrice") minPrice: Double? = null,
@@ -80,7 +80,7 @@ interface ApiService {
     suspend fun getOrder(@Path("id") id: String): Response<ApiResponse<Order>>
     
     @POST("orders")
-    suspend fun createOrder(@Body request: CreateOrderRequest): Response<ApiResponse<Order>>
+    suspend fun createOrder(@Body request: CreateOrderRequest): Response<ApiResponse<CreateOrderResponse>>
     
     @PUT("orders/{id}/cancel")
     suspend fun cancelOrder(@Path("id") id: String): Response<ApiResponse<Order>>

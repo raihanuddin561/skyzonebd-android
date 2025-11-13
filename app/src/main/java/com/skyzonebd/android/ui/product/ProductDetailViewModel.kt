@@ -6,6 +6,7 @@ import com.skyzonebd.android.data.model.Product
 import com.skyzonebd.android.data.repository.ProductRepository
 import com.skyzonebd.android.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,25 +27,36 @@ class ProductDetailViewModel @Inject constructor(
     private val _quantity = MutableStateFlow(1)
     val quantity: StateFlow<Int> = _quantity.asStateFlow()
     
+    private var productJob: Job? = null
+    private var relatedProductsJob: Job? = null
+    
     fun loadProduct(productId: String) {
-        viewModelScope.launch {
+        // Cancel previous product loading
+        productJob?.cancel()
+        // Set loading state immediately
+        _product.value = Resource.Loading()
+        
+        productJob = viewModelScope.launch {
             productRepository.getProductById(productId).collect { resource ->
                 _product.value = resource
                 
                 // Load related products if product loaded successfully
                 if (resource is Resource.Success && resource.data != null) {
-                    loadRelatedProducts(resource.data.categoryId)
+                    loadRelatedProducts(resource.data.categorySlug)
                 }
             }
         }
     }
     
-    private fun loadRelatedProducts(categoryId: String?) {
-        if (categoryId == null) return
+    private fun loadRelatedProducts(categorySlug: String?) {
+        if (categorySlug == null) return
         
-        viewModelScope.launch {
+        // Cancel previous related products loading
+        relatedProductsJob?.cancel()
+        
+        relatedProductsJob = viewModelScope.launch {
             productRepository.getProducts(
-                categoryId = categoryId,
+                categorySlug = categorySlug,
                 limit = 6
             ).collect { resource ->
                 if (resource is Resource.Success) {
@@ -55,14 +67,15 @@ class ProductDetailViewModel @Inject constructor(
     }
     
     fun incrementQuantity(moq: Int?) {
-        val step = moq ?: 1
-        _quantity.value += step
+        // Always increment by 1, not by MOQ
+        _quantity.value += 1
     }
     
     fun decrementQuantity(moq: Int?) {
-        val step = moq ?: 1
-        val newQuantity = _quantity.value - step
-        if (newQuantity >= (moq ?: 1)) {
+        // Always decrement by 1, but ensure we don't go below MOQ
+        val minQty = moq ?: 1
+        val newQuantity = _quantity.value - 1
+        if (newQuantity >= minQty) {
             _quantity.value = newQuantity
         }
     }

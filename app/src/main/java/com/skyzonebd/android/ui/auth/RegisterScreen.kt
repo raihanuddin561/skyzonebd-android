@@ -148,30 +148,34 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Phone Field
+            // Phone Field (Required per web API)
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Phone") },
+                label = { Text("Phone *") },
                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Company Name (B2B only)
-            if (isB2B) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = companyName,
-                    onValueChange = { companyName = it },
-                    label = { Text("Company Name *") },
-                    leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Company Name (Required per web API)
+            OutlinedTextField(
+                value = companyName,
+                onValueChange = { companyName = it },
+                label = { Text("Company Name *") },
+                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    Text(
+                        text = if (isB2B) "Business name for wholesale account" else "Can be your name or business name",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -233,13 +237,14 @@ fun RegisterScreen(
             // Register Button
             Button(
                 onClick = {
-                    if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && password == confirmPassword) {
+                    if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && 
+                        password == confirmPassword && phone.isNotBlank() && companyName.isNotBlank()) {
                         viewModel.register(
                             email = email,
                             password = password,
                             name = name,
-                            phone = phone.takeIf { it.isNotBlank() },
-                            companyName = companyName.takeIf { it.isNotBlank() },
+                            phone = phone,
+                            companyName = companyName,
                             isB2B = isB2B
                         )
                     }
@@ -251,7 +256,9 @@ fun RegisterScreen(
                         name.isNotBlank() &&
                         email.isNotBlank() &&
                         password.isNotBlank() &&
-                        password == confirmPassword
+                        password == confirmPassword &&
+                        phone.isNotBlank() &&
+                        companyName.isNotBlank()
             ) {
                 if (registerState is Resource.Loading) {
                     CircularProgressIndicator(

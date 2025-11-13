@@ -20,7 +20,7 @@ class ProductRepository @Inject constructor(
     fun getProducts(
         page: Int = 1,
         limit: Int = 20,
-        categoryId: String? = null,
+        categorySlug: String? = null,
         search: String? = null,
         isFeatured: Boolean? = null,
         minPrice: Double? = null,
@@ -30,13 +30,13 @@ class ProductRepository @Inject constructor(
         order: String? = null
     ): Flow<Resource<ProductsResponse>> = flow {
         try {
-            Log.d(TAG, "getProducts - Starting request: page=$page, limit=$limit, categoryId=$categoryId, search=$search, isFeatured=$isFeatured")
+            Log.d(TAG, "getProducts - Starting request: page=$page, limit=$limit, categorySlug=$categorySlug, search=$search, isFeatured=$isFeatured")
             emit(Resource.Loading())
             
             val response = apiService.getProducts(
                 page = page,
                 limit = limit,
-                categoryId = categoryId,
+                categorySlug = categorySlug,
                 search = search,
                 isFeatured = isFeatured,
                 minPrice = minPrice,
@@ -117,7 +117,13 @@ class ProductRepository @Inject constructor(
             Log.d(TAG, "getFeaturedProducts - Starting request: limit=$limit")
             emit(Resource.Loading())
             
-            val response = apiService.getFeaturedProducts(limit)
+            // Use regular products endpoint with isFeatured filter instead of /products/featured
+            // as the featured endpoint might not be implemented
+            val response = apiService.getProducts(
+                page = 1,
+                limit = limit,
+                isFeatured = true
+            )
             
             Log.d(TAG, "getFeaturedProducts - Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
             

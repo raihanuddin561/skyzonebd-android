@@ -1,5 +1,7 @@
 package com.skyzonebd.android.ui.profile
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,6 +26,7 @@ import com.skyzonebd.android.data.model.UserType
 import com.skyzonebd.android.ui.auth.AuthViewModel
 import com.skyzonebd.android.ui.navigation.Screen
 import com.skyzonebd.android.ui.theme.*
+import com.skyzonebd.android.util.AppConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +36,7 @@ fun ProfileScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
+    val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
     
     Scaffold(
@@ -178,8 +183,13 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Default.Phone,
                         title = "Contact Us",
-                        subtitle = "01918744551",
-                        onClick = { /* TODO: Open dialer */ }
+                        subtitle = AppConfig.COMPANY_PHONE,
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                data = Uri.parse("tel:${AppConfig.COMPANY_PHONE}")
+                            }
+                            context.startActivity(intent)
+                        }
                     )
                 }
                 
@@ -190,7 +200,7 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Default.Info,
                         title = "About",
-                        subtitle = "App version and info",
+                        subtitle = "Version ${AppConfig.APP_VERSION}",
                         onClick = { /* TODO */ }
                     )
                     
@@ -198,7 +208,10 @@ fun ProfileScreen(
                         icon = Icons.Default.PrivacyTip,
                         title = "Privacy Policy",
                         subtitle = "Read our privacy policy",
-                        onClick = { /* TODO */ }
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.PRIVACY_POLICY_URL))
+                            context.startActivity(intent)
+                        }
                     )
                     
                     ProfileMenuItem(

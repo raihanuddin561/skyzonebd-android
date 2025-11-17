@@ -1,5 +1,7 @@
 package com.skyzonebd.android.ui.checkout
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -21,6 +24,7 @@ import com.skyzonebd.android.data.model.PaymentMethod
 import com.skyzonebd.android.ui.cart.CartViewModel
 import com.skyzonebd.android.ui.navigation.Screen
 import com.skyzonebd.android.ui.theme.*
+import com.skyzonebd.android.util.AppConfig
 import com.skyzonebd.android.util.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +40,7 @@ fun CheckoutScreen(
     val paymentMethod by checkoutViewModel.paymentMethod.collectAsState()
     val orderState by checkoutViewModel.orderState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val context = LocalContext.current
     
     var note by remember { mutableStateOf("") }
     var shippingAddressText by remember { mutableStateOf("") }
@@ -402,6 +407,56 @@ fun CheckoutScreen(
                                 "Processing your order...",
                                 style = MaterialTheme.typography.bodyMedium
                             )
+                        }
+                    }
+                }
+            }
+            
+            // Need Help? Contact card
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = Primary
+                            )
+                            Column {
+                                Text(
+                                    "Need Help?",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Contact us for assistance",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = Uri.parse("tel:${AppConfig.COMPANY_PHONE}")
+                                }
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Text(AppConfig.COMPANY_PHONE)
                         }
                     }
                 }

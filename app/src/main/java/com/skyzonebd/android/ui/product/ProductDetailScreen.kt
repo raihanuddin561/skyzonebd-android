@@ -2,6 +2,8 @@ package com.skyzonebd.android.ui.product
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,7 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -278,8 +282,29 @@ fun ImageGallery(
     selectedIndex: Int,
     onImageSelected: (Int) -> Unit
 ) {
+    // Zoom and pan state
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    
+    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        
+        // Simple pan constraint - limit to reasonable bounds
+        val maxOffset = 1000f * scale
+        offset = Offset(
+            x = (offset.x + offsetChange.x).coerceIn(-maxOffset, maxOffset),
+            y = (offset.y + offsetChange.y).coerceIn(-maxOffset, maxOffset)
+        )
+    }
+    
+    // Reset zoom when image changes
+    LaunchedEffect(selectedIndex) {
+        scale = 1f
+        offset = Offset.Zero
+    }
+    
     Column {
-        // Main Image with animated transition
+        // Main Image with zoom and pan
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -292,9 +317,69 @@ fun ImageGallery(
                     contentDescription = "Product Image",
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                        .transformable(state = state),
                     contentScale = ContentScale.Fit
                 )
+                
+                // Zoom indicator and reset button
+                if (scale > 1f) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.ZoomIn,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            "${(scale * 100).toInt()}%",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        IconButton(
+                            onClick = {
+                                scale = 1f
+                                offset = Offset.Zero
+                            },
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Reset zoom",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Pinch to zoom hint
+                if (scale == 1f) {
+                    Text(
+                        "Pinch to zoom",
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(16.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
                 
                 // Image indicator
                 if (images.size > 1) {

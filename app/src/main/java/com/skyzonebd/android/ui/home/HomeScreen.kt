@@ -1,5 +1,7 @@
 package com.skyzonebd.android.ui.home
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +40,7 @@ import com.skyzonebd.android.data.model.UserType
 import com.skyzonebd.android.ui.auth.AuthViewModel
 import com.skyzonebd.android.ui.navigation.Screen
 import com.skyzonebd.android.ui.theme.*
+import com.skyzonebd.android.util.AppConfig
 import com.skyzonebd.android.util.Resource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,6 +59,7 @@ fun HomeScreen(
     val categoriesState by viewModel.categories.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
     val cartItemCount by cartViewModel.itemCount.collectAsState()
+    val context = LocalContext.current
     
     Scaffold(
         topBar = {
@@ -69,6 +74,14 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = { navController.navigate(Screen.Search.route) }) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
+                    IconButton(onClick = {
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:${AppConfig.COMPANY_PHONE}")
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Icon(Icons.Default.Phone, contentDescription = "Contact Us")
                     }
                     com.skyzonebd.android.ui.common.CartIconWithBadge(
                         itemCount = cartItemCount,
@@ -821,7 +834,7 @@ fun ProductCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = if (product.stock > 0) "In Stock (${product.stock})" else "Out of Stock",
+                        text = if (product.stock > 0) "In Stock" else "Out of Stock",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (product.stock > 0) Success else Error,
                         fontWeight = FontWeight.Medium

@@ -29,15 +29,14 @@ interface ApiService {
     @GET("products")
     suspend fun getProducts(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20,
+        @Query("limit") limit: Int = 12,
         @Query("category") categorySlug: String? = null,
         @Query("search") search: String? = null,
-        @Query("isFeatured") isFeatured: Boolean? = null,
+        @Query("featured") featured: String? = null,
         @Query("minPrice") minPrice: Double? = null,
         @Query("maxPrice") maxPrice: Double? = null,
         @Query("brand") brand: String? = null,
-        @Query("sortBy") sortBy: String? = null,
-        @Query("order") order: String? = null
+        @Query("sortBy") sortBy: String? = null
     ): Response<ApiResponse<ProductsResponse>>
     
     @GET("products/{id}")
@@ -46,8 +45,9 @@ interface ApiService {
     @GET("products/slug/{slug}")
     suspend fun getProductBySlug(@Path("slug") slug: String): Response<ApiResponse<ProductDetailResponse>>
     
-    @GET("products/featured")
+    @GET("products")
     suspend fun getFeaturedProducts(
+        @Query("featured") featured: String = "true",
         @Query("limit") limit: Int = 10
     ): Response<ApiResponse<ProductsResponse>>
     
@@ -65,7 +65,7 @@ interface ApiService {
     suspend fun searchProducts(
         @Query("search") query: String,
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 12
     ): Response<ApiResponse<ProductsResponse>>
     
     // ==================== Orders ====================

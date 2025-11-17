@@ -19,15 +19,14 @@ class ProductRepository @Inject constructor(
     
     fun getProducts(
         page: Int = 1,
-        limit: Int = 20,
+        limit: Int = 12,
         categorySlug: String? = null,
         search: String? = null,
         isFeatured: Boolean? = null,
         minPrice: Double? = null,
         maxPrice: Double? = null,
         brand: String? = null,
-        sortBy: String? = null,
-        order: String? = null
+        sortBy: String? = null
     ): Flow<Resource<ProductsResponse>> = flow {
         try {
             Log.d(TAG, "getProducts - Starting request: page=$page, limit=$limit, categorySlug=$categorySlug, search=$search, isFeatured=$isFeatured")
@@ -38,12 +37,11 @@ class ProductRepository @Inject constructor(
                 limit = limit,
                 categorySlug = categorySlug,
                 search = search,
-                isFeatured = isFeatured,
+                featured = if (isFeatured == true) "true" else null,
                 minPrice = minPrice,
                 maxPrice = maxPrice,
                 brand = brand,
-                sortBy = sortBy,
-                order = order
+                sortBy = sortBy
             )
             
             Log.d(TAG, "getProducts - Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")

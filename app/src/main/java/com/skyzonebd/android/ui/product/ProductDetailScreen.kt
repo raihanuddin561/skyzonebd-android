@@ -287,7 +287,7 @@ fun ImageGallery(
     var offset by remember { mutableStateOf(Offset.Zero) }
     
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        scale = (scale * zoomChange).coerceIn(1f, 3f)
         
         // Simple pan constraint - limit to reasonable bounds
         val maxOffset = 1000f * scale
@@ -328,56 +328,55 @@ fun ImageGallery(
                     contentScale = ContentScale.Fit
                 )
                 
-                // Zoom indicator and reset button
-                if (scale > 1f) {
+                // Zoom slider control
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
                     Row(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            Icons.Default.ZoomOut,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        
+                        Slider(
+                            value = scale,
+                            onValueChange = { newScale ->
+                                scale = newScale
+                            },
+                            valueRange = 1f..3f,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color.White,
+                                activeTrackColor = Color.White,
+                                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                            )
+                        )
+                        
                         Icon(
                             Icons.Default.ZoomIn,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            "${(scale * 100).toInt()}%",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        IconButton(
-                            onClick = {
-                                scale = 1f
-                                offset = Offset.Zero
-                            },
                             modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Reset zoom",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                        )
                     }
-                }
-                
-                // Pinch to zoom hint
-                if (scale == 1f) {
+                    
                     Text(
-                        "Pinch to zoom",
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(16.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        "${(scale * 100).toInt()}%",
                         color = Color.White,
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
                 

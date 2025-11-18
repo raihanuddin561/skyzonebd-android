@@ -115,13 +115,8 @@ class ProductRepository @Inject constructor(
             Log.d(TAG, "getFeaturedProducts - Starting request: limit=$limit")
             emit(Resource.Loading())
             
-            // Use regular products endpoint with isFeatured filter instead of /products/featured
-            // as the featured endpoint might not be implemented
-            val response = apiService.getProducts(
-                page = 1,
-                limit = limit,
-                isFeatured = true
-            )
+            // Use the dedicated featured products endpoint
+            val response = apiService.getFeaturedProducts(limit = limit)
             
             Log.d(TAG, "getFeaturedProducts - Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
             

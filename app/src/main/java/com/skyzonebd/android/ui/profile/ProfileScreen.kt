@@ -38,6 +38,54 @@ fun ProfileScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var hasError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
+    // Add error handling for user data
+    LaunchedEffect(currentUser) {
+        try {
+            // Log current user state for debugging
+            android.util.Log.d("ProfileScreen", "Current user: $currentUser")
+            android.util.Log.d("ProfileScreen", "User type: ${currentUser?.userType}")
+            android.util.Log.d("ProfileScreen", "User role: ${currentUser?.role}")
+            hasError = false
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileScreen", "Error loading user data", e)
+            hasError = true
+            errorMessage = e.message ?: "Unknown error"
+        }
+    }
+    
+    if (hasError) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Error loading profile",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { 
+                authViewModel.logout()
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }) {
+                Text("Logout and Login Again")
+            }
+        }
+        return
+    }
     
     Scaffold(
         topBar = {
@@ -201,7 +249,10 @@ fun ProfileScreen(
                         icon = Icons.Default.Info,
                         title = "About",
                         subtitle = "Version ${AppConfig.APP_VERSION}",
-                        onClick = { /* TODO */ }
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.WEBSITE_URL))
+                            context.startActivity(intent)
+                        }
                     )
                     
                     ProfileMenuItem(
@@ -218,7 +269,10 @@ fun ProfileScreen(
                         icon = Icons.Default.Description,
                         title = "Terms & Conditions",
                         subtitle = "Read terms of service",
-                        onClick = { /* TODO */ }
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.TERMS_URL))
+                            context.startActivity(intent)
+                        }
                     )
                 }
                 

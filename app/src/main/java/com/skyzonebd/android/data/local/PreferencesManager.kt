@@ -9,9 +9,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.skyzonebd.android.data.model.User
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,10 +29,27 @@ class PreferencesManager @Inject constructor(
 ) {
     
     private val dataStore = context.dataStore
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("auth_token")
         private val USER_KEY = stringPreferencesKey("user")
+        private val DATA_VERSION_KEY = stringPreferencesKey("data_version")
+        private const val CURRENT_DATA_VERSION = "2" // Increment when data format changes
+    }
+    
+    init {
+        // Migrate old data format on first access
+        runBlocking {
+            val storedVersion = dataStore.data.first()[DATA_VERSION_KEY]
+            if (storedVersion != CURRENT_DATA_VERSION) {
+                android.util.Log.d("PreferencesManager", "Data version mismatch. Clearing old data. Old version: $storedVersion, Current: $CURRENT_DATA_VERSION")
+                dataStore.edit { preferences ->
+                    preferences.remove(USER_KEY) // Clear old user data
+                    preferences[DATA_VERSION_KEY] = CURRENT_DATA_VERSION
+                }
+            }
+        }
     }
     
     // Token management
@@ -67,8 +88,28 @@ class PreferencesManager @Inject constructor(
         return dataStore.data.map { preferences ->
             preferences[USER_KEY]?.let { json ->
                 try {
-                    gson.fromJson(json, User::class.java)
+                    android.util.Log.d("PreferencesManager", "Parsing user JSON: $json")
+                    val user = gson.fromJson(json, User::class.java)
+                    android.util.Log.d("PreferencesManager", "Parsed user successfully: $user")
+                    
+                    // Validate that enums were properly deserialized
+                    if (user.userType == null || user.role == null) {
+                        android.util.Log.e("PreferencesManager", "User has null enum fields - clearing corrupted data")
+                        // Clear corrupted data
+                        coroutineScope.launch {
+                            clearUser()
+                        }
+                        return@map null
+                    }
+                    
+                    user
                 } catch (e: Exception) {
+                    android.util.Log.e("PreferencesManager", "Failed to parse user JSON - clearing corrupted data", e)
+                    android.util.Log.e("PreferencesManager", "JSON was: $json")
+                    // Clear corrupted data
+                    coroutineScope.launch {
+                        clearUser()
+                    }
                     null
                 }
             }
@@ -78,8 +119,13 @@ class PreferencesManager @Inject constructor(
     suspend fun getUser(): User? {
         return dataStore.data.first()[USER_KEY]?.let { json ->
             try {
-                gson.fromJson(json, User::class.java)
+                android.util.Log.d("PreferencesManager", "Parsing user JSON (suspend): $json")
+                val user = gson.fromJson(json, User::class.java)
+                android.util.Log.d("PreferencesManager", "Parsed user successfully (suspend): $user")
+                user
             } catch (e: Exception) {
+                android.util.Log.e("PreferencesManager", "Failed to parse user JSON (suspend)", e)
+                android.util.Log.e("PreferencesManager", "JSON was: $json")
                 null
             }
         }

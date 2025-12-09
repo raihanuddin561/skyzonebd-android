@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.skyzonebd.android.ui.auth.AuthViewModel
 import com.skyzonebd.android.ui.auth.LoginScreen
 import com.skyzonebd.android.ui.auth.RegisterScreen
+import com.skyzonebd.android.ui.address.AddressesScreen
 import com.skyzonebd.android.ui.cart.CartScreen
 import com.skyzonebd.android.ui.cart.CartViewModel
 import com.skyzonebd.android.ui.category.CategoryScreen
@@ -24,6 +25,7 @@ import com.skyzonebd.android.ui.product.ProductDetailScreen
 import com.skyzonebd.android.ui.product.ProductsScreen
 import com.skyzonebd.android.ui.order.OrdersScreen
 import com.skyzonebd.android.ui.profile.ProfileScreen
+import com.skyzonebd.android.ui.rfq.RFQScreen
 import com.skyzonebd.android.ui.search.SearchScreen
 import com.skyzonebd.android.ui.components.BottomNavigationBar
 
@@ -158,6 +160,16 @@ fun SkyzoneBDNavigation() {
             // Orders
             composable(Screen.Orders.route) {
                 OrdersScreen(navController = navController)
+            }
+            
+            // Addresses
+            composable(Screen.Addresses.route) {
+                AddressesScreen(navController = navController)
+            }
+            
+            // RFQ (B2B Feature)
+            composable(Screen.RFQ.route) {
+                RFQScreen(navController = navController)
             }
             
             // Search

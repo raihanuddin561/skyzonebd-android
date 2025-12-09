@@ -19,18 +19,38 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
+        // SEO and App Indexing
+        manifestPlaceholders["appName"] = "SkyzoneBD - B2B & B2C Shopping"
+        manifestPlaceholders["appDescription"] = "Bangladesh's premier B2B and B2C marketplace"
+        
         // API Base URL - Update this to your Vercel deployment URL
         buildConfigField("String", "BASE_URL", "\"https://skyzonebd.vercel.app/\"")
         buildConfigField("String", "API_URL", "\"https://skyzonebd.vercel.app/api/\"")
+        
+        // App metadata for Play Store
+        resValue("string", "google_play_services_version", "12451000")
+    }
+
+    signingConfigs {
+        create("release") {
+            // Store passwords as environment variables for security
+            // Set in your system: KEYSTORE_PASSWORD and KEY_PASSWORD
+            storeFile = file("../skyzonebd-release-key.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "temp_password"
+            keyAlias = "skyzonebd"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "temp_password"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "BASE_URL", "\"https://skyzonebd.vercel.app/\"")
             buildConfigField("String", "API_URL", "\"https://skyzonebd.vercel.app/api/\"")
         }

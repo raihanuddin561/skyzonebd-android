@@ -32,19 +32,22 @@ fun OrdersScreen(
 ) {
     val ordersState by viewModel.orders.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
-    val isGuest = currentUser == null
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    var isAuthChecked by remember { mutableStateOf(false) }
     
-    // Redirect guest users to login
-    LaunchedEffect(isGuest) {
-        if (isGuest) {
+    // Wait for auth state to be checked, then redirect if not logged in
+    LaunchedEffect(currentUser) {
+        // Mark as checked after first emission
+        kotlinx.coroutines.delay(100) // Small delay to ensure DataStore has loaded
+        isAuthChecked = true
+        
+        if (currentUser == null) {
+            android.util.Log.d("OrdersScreen", "No user found, redirecting to login")
             navController.navigate(Screen.Login.route) {
                 popUpTo(Screen.Orders.route) { inclusive = true }
             }
-        }
-    }
-    
-    LaunchedEffect(Unit) {
-        if (!isGuest) {
+        } else {
+            android.util.Log.d("OrdersScreen", "User found: ${currentUser?.email}, loading orders")
             viewModel.loadOrders()
         }
     }
@@ -66,6 +69,19 @@ fun OrdersScreen(
             )
         }
     ) { padding ->
+        // Show loading while checking authentication
+        if (!isAuthChecked || currentUser == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+        
         when (val state = ordersState) {
             is Resource.Loading -> {
                 Box(

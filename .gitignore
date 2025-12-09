@@ -10,3 +10,12 @@ captures/
 *.apk
 *.ap_
 *.aab
+
+# Signing keys - NEVER commit these!
+*.jks
+*.keystore
+keystore.properties
+
+# Sensitive files
+secrets.properties
+

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name - Bengali -->
+    <string name="app_name">স্কাইজোন বিডি</string>
+    <string name="app_name_full">স্কাইজোন বিডি - পাইকারি ও খুচরা কেনাকাটা</string>
+    <string name="app_description">বাংলাদেশের সেরা বি২বি এবং বি২সি মার্কেটপ্লেস পাইকারি এবং খুচরা কেনাকাটার জন্য সেরা দাম এবং দ্রুত ডেলিভারি সহ</string>
+    <string name="app_tagline">পাইকারি ও খুচরা কেনাকাটা - বাংলাদেশে সেরা দাম</string>
+    
+    <!-- Privacy & Legal -->
+    <string name="privacy_policy">গোপনীয়তা নীতি</string>
+    <string name="terms_of_service">সেবা পাবার শর্ত</string>
+    <string name="about_us">আমাদের সম্পর্কে</string>
+    <string name="contact_us">যোগাযোগ করুন</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">হোম</string>
+    <string name="nav_products">পণ্য</string>
+    <string name="nav_cart">কার্ট</string>
+    <string name="nav_profile">প্রোফাইল</string>
+    
+    <!-- Auth -->
+    <string name="login">লগইন</string>
+    <string name="register">নিবন্ধন</string>
+    <string name="logout">লগআউট</string>
+    <string name="email">ইমেইল</string>
+    <string name="password">পাসওয়ার্ড</string>
+    <string name="confirm_password">পাসওয়ার্ড নিশ্চিত করুন</string>
+    <string name="full_name">পুরো নাম</string>
+    <string name="phone">ফোন</string>
+    <string name="company_name">কোম্পানির নাম</string>
+    
+    <!-- Product -->
+    <string name="add_to_cart">কার্টে যোগ করুন</string>
+    <string name="buy_now">এখনই কিনুন</string>
+    <string name="out_of_stock">স্টক শেষ</string>
+    <string name="in_stock">স্টকে আছে</string>
+    <string name="limited_stock">সীমিত স্টক</string>
+    
+    <!-- Cart -->
+    <string name="cart_empty">আপনার কার্ট খালি</string>
+    <string name="continue_shopping">কেনাকাটা চালিয়ে যান</string>
+    <string name="proceed_to_checkout">চেকআউট করুন</string>
+    <string name="subtotal">সাবটোটাল</string>
+    <string name="shipping">ডেলিভারি চার্জ</string>
+    <string name="tax">ট্যাক্স</string>
+    <string name="total">মোট</string>
+    
+    <!-- B2B -->
+    <string name="wholesale_price">পাইকারি মূল্য</string>
+    <string name="moq">ন্যূনতম অর্ডার</string>
+    <string name="request_quote">কোটেশন অনুরোধ</string>
+    <string name="business_account">ব্যবসায়িক অ্যাকাউন্ট</string>
+    
+    <!-- Common -->
+    <string name="search">খুঁজুন</string>
+    <string name="filter">ফিল্টার</string>
+    <string name="sort">সাজান</string>
+    <string name="category">ক্যাটাগরি</string>
+    <string name="price">মূল্য</string>
+    <string name="rating">রেটিং</string>
+    <string name="reviews">রিভিউ</string>
+    <string name="error">ত্রুটি</string>
+    <string name="retry">পুনরায় চেষ্টা করুন</string>
+    <string name="loading">লোড হচ্ছে...</string>
+    <string name="save">সংরক্ষণ</string>
+    <string name="cancel">বাতিল</string>
+    <string name="delete">মুছুন</string>
+    <string name="edit">সম্পাদনা</string>
+    
+    <!-- Data Safety Messages -->
+    <string name="data_collection_notice">আপনাকে সেরা কেনাকাটার অভিজ্ঞতা প্রদানের জন্য আমরা ন্যূনতম ডেটা সংগ্রহ করি। আপনার ডেটা এনক্রিপ্ট এবং সুরক্ষিত।</string>
+    <string name="account_deletion_info">আপনি যে কোনো সময় আপনার প্রোফাইল সেটিংস থেকে অ্যাকাউন্ট মুছে ফেলার অনুরোধ করতে পারেন। ৩০ দিনের মধ্যে আপনার সমস্ত ব্যক্তিগত ডেটা স্থায়ীভাবে মুছে ফেলা হবে।</string>
+    <string name="data_sharing_info">আমরা আপনার সুস্পষ্ট সম্মতি ছাড়া তৃতীয় পক্ষের সাথে আপনার ব্যক্তিগত তথ্য শেয়ার করি না।</string>
+</resources>

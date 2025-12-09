@@ -48,25 +48,39 @@ data class User(
 )
 
 enum class UserRole {
-    @SerializedName("ADMIN")
     ADMIN,
-    
-    @SerializedName("SELLER")
     SELLER,
+    BUYER;
     
-    @SerializedName("BUYER")
-    BUYER
+    companion object {
+        @JvmStatic
+        fun fromString(value: String?): UserRole {
+            return when (value?.uppercase()) {
+                "ADMIN" -> ADMIN
+                "SELLER" -> SELLER  
+                "BUYER" -> BUYER
+                else -> BUYER
+            }
+        }
+    }
 }
 
 enum class UserType {
-    @SerializedName("RETAIL")
-    RETAIL,     // B2C - Individual/retail customers
+    RETAIL,
+    WHOLESALE,
+    GUEST;
     
-    @SerializedName("WHOLESALE")
-    WHOLESALE,  // B2B - Business/wholesale customers
-    
-    @SerializedName("GUEST")
-    GUEST       // Not logged in
+    companion object {
+        @JvmStatic
+        fun fromString(value: String?): UserType {
+            return when (value?.uppercase()) {
+                "RETAIL" -> RETAIL
+                "WHOLESALE" -> WHOLESALE
+                "GUEST" -> GUEST
+                else -> RETAIL
+            }
+        }
+    }
 }
 
 data class BusinessInfo(

@@ -1,5 +1,18 @@
 <resources>
+    <!-- App Name - SEO Optimized -->
     <string name="app_name">SkyzoneBD</string>
+    <string name="app_name_full">SkyzoneBD - B2B &amp; B2C Shopping</string>
+    <string name="app_description">Bangladesh\'s premier B2B and B2C marketplace for wholesale and retail shopping with best prices and fast delivery</string>
+    <string name="app_tagline">Shop Wholesale &amp; Retail - Best Prices in Bangladesh</string>
+    
+    <!-- Privacy & Legal -->
+    <string name="privacy_policy_url">https://skyzonebd.vercel.app/privacy-policy</string>
+    <string name="terms_of_service_url">https://skyzonebd.vercel.app/terms-of-service</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="about_us">About Us</string>
+    <string name="contact_us">Contact Us</string>
+    <string name="support_email">support@skyzonebd.com</string>
     
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -55,4 +68,14 @@
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
+    
+    <!-- Data Safety & Privacy Messages -->
+    <string name="data_collection_notice">We collect minimal data to provide you with the best shopping experience. Your data is encrypted and secure.</string>
+    <string name="account_deletion_info">You can request account deletion at any time from your profile settings. All your personal data will be permanently removed within 30 days.</string>
+    <string name="data_sharing_info">We do not share your personal information with third parties without your explicit consent.</string>
+    
+    <!-- SEO Keywords (not displayed, used for app indexing) -->
+    <string name="keywords_b2b">B2B marketplace, wholesale shopping, bulk buying, business supplies, wholesale prices</string>
+    <string name="keywords_b2c">retail shopping, online shopping Bangladesh, e-commerce, best prices, online store</string>
+    <string name="keywords_location">Bangladesh shopping, Dhaka online shopping, Chittagong marketplace, Sylhet shopping</string>
 </resources>

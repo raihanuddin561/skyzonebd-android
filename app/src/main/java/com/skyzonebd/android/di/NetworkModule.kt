@@ -3,9 +3,12 @@ package com.skyzonebd.android.di
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
 import com.skyzonebd.android.BuildConfig
 import com.skyzonebd.android.data.local.CartPreferences
 import com.skyzonebd.android.data.local.PreferencesManager
+import com.skyzonebd.android.data.model.UserRole
+import com.skyzonebd.android.data.model.UserType
 import com.skyzonebd.android.data.remote.ApiService
 import com.skyzonebd.android.data.remote.AuthInterceptor
 import dagger.Module
@@ -30,6 +33,12 @@ object NetworkModule {
         return GsonBuilder()
             .setLenient()
             .setFieldNamingPolicy(com.google.gson.FieldNamingPolicy.IDENTITY)
+            .registerTypeAdapter(UserType::class.java, JsonDeserializer { json, _, _ ->
+                UserType.fromString(json.asString)
+            })
+            .registerTypeAdapter(UserRole::class.java, JsonDeserializer { json, _, _ ->
+                UserRole.fromString(json.asString)
+            })
             .serializeNulls()
             .create()
     }

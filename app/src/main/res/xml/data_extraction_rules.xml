@@ -1,2 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources />
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude sensitive data from cloud backups -->
+        <exclude domain="datastore" path="." />
+        <exclude domain="sharedpref" path="skyzone_preferences.xml" />
+        <exclude domain="sharedpref" path="cart_preferences.xml" />
+        <exclude domain="database" path="skyzone_database.db" />
+        <!-- Include other app data -->
+        <include domain="file" path="." />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- Allow transfer of non-sensitive data between devices -->
+        <exclude domain="datastore" path="." />
+        <exclude domain="sharedpref" path="skyzone_preferences.xml" />
+        <exclude domain="sharedpref" path="cart_preferences.xml" />
+    </device-transfer>
+</data-extraction-rules>

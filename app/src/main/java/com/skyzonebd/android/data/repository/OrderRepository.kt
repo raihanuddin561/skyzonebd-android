@@ -1,6 +1,8 @@
 package com.skyzonebd.android.data.repository
 
 import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.skyzonebd.android.data.model.CreateOrderRequest
 import com.skyzonebd.android.data.model.Order
 import com.skyzonebd.android.data.model.OrdersResponse
@@ -15,6 +17,8 @@ import javax.inject.Singleton
 class OrderRepository @Inject constructor(
     private val apiService: ApiService
 ) {
+    
+    private val gson = Gson()
     
     companion object {
         private const val TAG = "OrderRepository"
@@ -89,8 +93,16 @@ class OrderRepository @Inject constructor(
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
-                val errorMsg = "Failed to create order: ${response.message()}, Body: $errorBody"
-                emit(Resource.Error(errorMsg))
+                val errorMessage = try {
+                    val jsonObject = gson.fromJson(errorBody, JsonObject::class.java)
+                    jsonObject.get("error")?.asString 
+                        ?: jsonObject.get("message")?.asString 
+                        ?: "Failed to create order"
+                } catch (e: Exception) {
+                    "Failed to create order: ${response.code()} ${response.message()}"
+                }
+                Log.e(TAG, "Create order error: $errorMessage (Response: $errorBody)")
+                emit(Resource.Error(errorMessage))
             }
         } catch (e: Exception) {
             val errorMsg = e.message ?: "Network error occurred"

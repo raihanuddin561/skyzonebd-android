@@ -107,6 +107,9 @@ data class OrderItem(
     @SerializedName("price")
     val price: Double = 0.0,
     
+    @SerializedName("unit")
+    val unit: String = "piece",
+    
     @SerializedName("total")
     val total: Double = 0.0,
     
@@ -129,7 +132,10 @@ data class SimpleProduct(
     val imageUrl: String? = null,
     
     @SerializedName("price")
-    val price: Double = 0.0
+    val price: Double = 0.0,
+    
+    @SerializedName("unit")
+    val unit: String = "piece"
 )
 
 enum class OrderStatus {
@@ -263,7 +269,11 @@ data class CreateOrderRequest(
     
     // For guest orders - send as nested object to match web API
     @SerializedName("guestInfo")
-    val guestInfo: GuestInfo? = null
+    val guestInfo: GuestInfo? = null,
+    
+    // For registered users - mobile number can be updated during checkout
+    @SerializedName("mobile")
+    val mobile: String? = null
 )
 
 data class CreateOrderItem(

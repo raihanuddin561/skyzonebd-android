@@ -52,7 +52,15 @@ fun CheckoutScreen(
     var guestMobile by remember { mutableStateOf("") }
     var guestCompany by remember { mutableStateOf("") }
     
+    // Registered user mobile (editable)
+    var userMobile by remember { mutableStateOf(currentUser?.phone ?: "") }
+    
     val isGuest = currentUser == null
+    
+    // Update userMobile when currentUser changes
+    LaunchedEffect(currentUser) {
+        userMobile = currentUser?.phone ?: ""
+    }
     
     // Get available payment methods (all for now)
     val availablePaymentMethods = listOf(
@@ -176,13 +184,15 @@ fun CheckoutScreen(
                             totalAmount = totalAmount,
                             note = note.takeIf { it.isNotBlank() },
                             shippingAddress = finalShippingAddress,
-                            billingAddress = finalBillingAddress
+                            billingAddress = finalBillingAddress,
+                            mobile = userMobile
                         )
                     }
                 },
                 enabled = (shippingAddressText.isNotBlank() || billingAddressText.isNotBlank()) &&
                         orderState !is Resource.Loading &&
-                        (!isGuest || (guestName.isNotBlank() && guestMobile.isNotBlank()))
+                        (!isGuest || (guestName.isNotBlank() && guestMobile.isNotBlank())) &&
+                        (isGuest || userMobile.isNotBlank())
             )
         }
     ) { padding ->
@@ -193,13 +203,14 @@ fun CheckoutScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Guest User Information (if not logged in)
-            if (isGuest) {
-                item {
-                    SectionCard(
-                        title = "Your Information",
-                        icon = Icons.Default.Person
-                    ) {
+            // User Information Section
+            item {
+                SectionCard(
+                    title = if (isGuest) "Your Information" else "Contact Information",
+                    icon = Icons.Default.Person
+                ) {
+                    if (isGuest) {
+                        // Guest User Fields
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedTextField(
                                 value = guestName,
@@ -233,6 +244,72 @@ fun CheckoutScreen(
                                 label = { Text("Company Name (Optional)") },
                                 singleLine = true
                             )
+                        }
+                    } else {
+                        // Registered User Fields
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Name (read-only)
+                            OutlinedTextField(
+                                value = currentUser?.name ?: "",
+                                onValueChange = { },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Full Name") },
+                                singleLine = true,
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            
+                            // Email (read-only)
+                            OutlinedTextField(
+                                value = currentUser?.email ?: "",
+                                onValueChange = { },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Email") },
+                                singleLine = true,
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            
+                            // Mobile (editable)
+                            OutlinedTextField(
+                                value = userMobile,
+                                onValueChange = { userMobile = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Mobile Number *") },
+                                singleLine = true,
+                                placeholder = { Text("+880-1711-123456") },
+                                supportingText = { 
+                                    Text(
+                                        "You can update your mobile number if needed",
+                                        style = MaterialTheme.typography.bodySmall
+                                    ) 
+                                }
+                            )
+                            
+                            // Company Name (read-only if exists)
+                            if (!currentUser?.companyName.isNullOrBlank()) {
+                                OutlinedTextField(
+                                    value = currentUser?.companyName ?: "",
+                                    onValueChange = { },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Company Name") },
+                                    singleLine = true,
+                                    enabled = false,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                        disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -619,8 +696,13 @@ fun CheckoutItemCard(item: CartItem) {
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
+                val quantityText = if (item.product.displayUnit.isNotEmpty()) {
+                    "${item.quantity}${item.product.displayUnit} × ৳${item.price}/${item.product.displayUnit}"
+                } else {
+                    "Quantity: ${item.quantity} × ৳${item.price}"
+                }
                 Text(
-                    "Quantity: ${item.quantity}",
+                    quantityText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant
                 )

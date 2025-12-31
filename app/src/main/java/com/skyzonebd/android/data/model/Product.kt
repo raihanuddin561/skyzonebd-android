@@ -65,6 +65,10 @@ data class Product(
     @SerializedName("baseWholesalePrice")
     val baseWholesalePrice: Double? = null,
     
+    // Unit of measurement (NEW)
+    @SerializedName("unit")
+    val unit: String? = null,
+    
     // Legacy fields
     @SerializedName("price")
     val price: Double,
@@ -140,6 +144,7 @@ data class Product(
     val moq: Int? get() = if (wholesaleEnabled) wholesaleMOQ else retailMOQ
     val dimensions: String? get() = null // Can be added if needed
     val weight: Int? get() = null // Can be added if needed
+    val displayUnit: String get() = unit?.takeIf { it.isNotEmpty() && it != "null" && it != "piece" } ?: ""
     
     // Helper functions
     fun getDisplayPrice(userType: UserType, quantity: Int = 1): Double {

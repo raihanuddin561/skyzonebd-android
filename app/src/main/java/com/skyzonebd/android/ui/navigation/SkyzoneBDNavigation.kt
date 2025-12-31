@@ -24,9 +24,14 @@ import com.skyzonebd.android.ui.home.HomeScreen
 import com.skyzonebd.android.ui.product.ProductDetailScreen
 import com.skyzonebd.android.ui.product.ProductsScreen
 import com.skyzonebd.android.ui.order.OrdersScreen
+import com.skyzonebd.android.ui.order.OrderDetailScreen
 import com.skyzonebd.android.ui.profile.ProfileScreen
 import com.skyzonebd.android.ui.rfq.RFQScreen
+import com.skyzonebd.android.ui.rfq.RFQCreateScreen
+import com.skyzonebd.android.ui.rfq.RFQDetailScreen
 import com.skyzonebd.android.ui.search.SearchScreen
+import com.skyzonebd.android.ui.wishlist.WishlistScreen
+import com.skyzonebd.android.ui.wholesale.WholesaleScreen
 import com.skyzonebd.android.ui.components.BottomNavigationBar
 
 @Composable
@@ -170,6 +175,49 @@ fun SkyzoneBDNavigation() {
             // RFQ (B2B Feature)
             composable(Screen.RFQ.route) {
                 RFQScreen(navController = navController)
+            }
+            
+            // RFQ Create
+            composable(Screen.RFQCreate.route) {
+                RFQCreateScreen(navController = navController)
+            }
+            
+            // RFQ Detail
+            composable(
+                route = Screen.RFQDetail.route,
+                arguments = listOf(
+                    navArgument("rfqId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val rfqId = backStackEntry.arguments?.getString("rfqId") ?: ""
+                RFQDetailScreen(
+                    navController = navController,
+                    rfqId = rfqId
+                )
+            }
+            
+            // Order Detail
+            composable(
+                route = Screen.OrderDetail.route,
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+                OrderDetailScreen(
+                    navController = navController,
+                    orderId = orderId
+                )
+            }
+            
+            // Wishlist
+            composable(Screen.Wishlist.route) {
+                WishlistScreen(navController = navController)
+            }
+            
+            // Wholesale
+            composable(Screen.Wholesale.route) {
+                WholesaleScreen(navController = navController)
             }
             
             // Search

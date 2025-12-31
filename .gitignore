@@ -18,4 +18,5 @@ keystore.properties
 
 # Sensitive files
 secrets.properties
+keystore.properties
 

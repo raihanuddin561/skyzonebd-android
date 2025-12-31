@@ -29,7 +29,7 @@ interface ApiService {
     @GET("products")
     suspend fun getProducts(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 12,
+        @Query("limit") limit: Int = 100,
         @Query("category") categorySlug: String? = null,
         @Query("search") search: String? = null,
         @Query("featured") featured: String? = null,
@@ -74,10 +74,10 @@ interface ApiService {
     suspend fun getOrders(
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20
-    ): Response<ApiResponse<OrdersResponse>>
+    ): Response<OrdersResponse>
     
     @GET("orders/{id}")
-    suspend fun getOrder(@Path("id") id: String): Response<ApiResponse<Order>>
+    suspend fun getOrder(@Path("id") id: String): Response<Order>
     
     @POST("orders")
     suspend fun createOrder(@Body request: CreateOrderRequest): Response<ApiResponse<CreateOrderResponse>>

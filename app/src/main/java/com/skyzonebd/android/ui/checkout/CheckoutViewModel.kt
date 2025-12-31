@@ -51,11 +51,18 @@ class CheckoutViewModel @Inject constructor(
         totalAmount: Double,
         note: String? = null,
         shippingAddress: String,
-        billingAddress: String
+        billingAddress: String,
+        mobile: String? = null
     ) {
         // Addresses are already validated and filled in CheckoutScreen
         if (shippingAddress.isBlank() || billingAddress.isBlank()) {
             _orderState.value = Resource.Error("Please provide at least one address")
+            return
+        }
+        
+        // Validate mobile number for registered users
+        if (mobile.isNullOrBlank()) {
+            _orderState.value = Resource.Error("Please provide a mobile number")
             return
         }
         
@@ -77,7 +84,8 @@ class CheckoutViewModel @Inject constructor(
                 shippingAddress = shippingAddress,
                 billingAddress = billingAddress,
                 paymentMethod = _paymentMethod.value.name.lowercase(),
-                notes = note
+                notes = note,
+                mobile = mobile
             )
             
             try {

@@ -317,67 +317,37 @@ fun ImageGallery(
                     contentDescription = "Product Image",
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y
-                        )
-                        .transformable(state = state),
+                        .padding(16.dp),
                     contentScale = ContentScale.Fit
                 )
                 
-                // Zoom slider control
+                // Zoom slider removed - zoom/pan gestures disabled to prevent accidental image movement
+                // If needed, add a "View Full Screen" button instead
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .background(Color.Black.copy(alpha = 0.3f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            Icons.Default.ZoomOut,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        
-                        Slider(
-                            value = scale,
-                            onValueChange = { newScale ->
-                                scale = newScale
-                            },
-                            valueRange = 1f..3f,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 12.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color.White,
-                                activeTrackColor = Color.White,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                            )
-                        )
-                        
-                        Icon(
                             Icons.Default.ZoomIn,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Tap image to view full screen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.9f)
                         )
                     }
-                    
-                    Text(
-                        "${(scale * 100).toInt()}%",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
                 }
                 
                 // Image indicator
@@ -490,7 +460,7 @@ fun ProductInfo(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "৳${displayPrice}",
+                text = if (product.displayUnit.isNotEmpty()) "৳${displayPrice}/${product.displayUnit}" else "৳${displayPrice}",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Primary
@@ -499,7 +469,7 @@ fun ProductInfo(
             // Show retail price strikethrough for wholesale users
             if (userType == UserType.WHOLESALE && product.wholesalePrice != null) {
                 Text(
-                    text = "৳${product.retailPrice}",
+                    text = if (product.displayUnit.isNotEmpty()) "৳${product.retailPrice}/${product.displayUnit}" else "৳${product.retailPrice}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textDecoration = TextDecoration.LineThrough

@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 import com.skyzonebd.android.data.model.Category
 import com.skyzonebd.android.data.model.HeroSlide
 import com.skyzonebd.android.data.model.Product
@@ -208,7 +210,10 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp)
                             ) {
-                                items(featuredProducts) { product ->
+                                items(
+                                    items = featuredProducts,
+                                    key = { product -> product.id } // Add key for better performance
+                                ) { product ->
                                     ProductCard(
                                         product = product,
                                         userType = currentUser?.userType ?: UserType.RETAIL,
@@ -716,6 +721,13 @@ fun ProductCard(
     userType: UserType,
     onClick: () -> Unit
 ) {
+    // Memoize calculations to avoid recomputation on recomposition
+    val displayPrice = remember(product, userType) { product.getDisplayPrice(userType) }
+    val discountPercentage = remember(product) { product.getDiscountPercentage() }
+    val hasDiscount = remember(displayPrice, product.retailPrice) { 
+        discountPercentage != null && displayPrice < product.retailPrice 
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -731,9 +743,13 @@ fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 AsyncImage(
-                    model = product.imageUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(product.imageUrl)
+                        .crossfade(300)
+                        .build(),
                     contentDescription = product.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -759,7 +775,7 @@ fun ProductCard(
                 }
                 
                 // Discount badge
-                product.getDiscountPercentage()?.let { discount ->
+                discountPercentage?.let { discount ->
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -801,18 +817,17 @@ fun ProductCard(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val displayPrice = product.getDisplayPrice(userType)
                     Text(
-                        text = "৳${String.format("%.0f", displayPrice)}",
+                        text = if (product.displayUnit.isNotEmpty()) "৳${String.format("%.0f", displayPrice)}/${product.displayUnit}" else "৳${String.format("%.0f", displayPrice)}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Primary
                     )
                     
                     // Original price strikethrough if discounted
-                    if (product.getDiscountPercentage() != null && displayPrice < product.retailPrice) {
+                    if (hasDiscount) {
                         Text(
-                            text = "৳${String.format("%.0f", product.retailPrice)}",
+                            text = if (product.displayUnit.isNotEmpty()) "৳${String.format("%.0f", product.retailPrice)}/${product.displayUnit}" else "৳${String.format("%.0f", product.retailPrice)}",
                             style = MaterialTheme.typography.bodyMedium,
                             textDecoration = TextDecoration.LineThrough,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

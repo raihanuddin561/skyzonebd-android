@@ -208,8 +208,9 @@ fun CartItemCard(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val unitDisplay = if (item.product.displayUnit.isNotEmpty()) "/${item.product.displayUnit}" else ""
                     Text(
-                        text = "৳${item.price}",
+                        text = "৳${item.price}$unitDisplay",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = PriceColor
@@ -218,7 +219,7 @@ fun CartItemCard(
                     // Show retail price strikethrough for wholesale
                     if (userType == UserType.WHOLESALE && item.product.wholesalePrice != null) {
                         Text(
-                            text = "৳${item.product.retailPrice}",
+                            text = "৳${item.product.retailPrice}$unitDisplay",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textDecoration = TextDecoration.LineThrough
@@ -314,8 +315,13 @@ fun CartItemCard(
                             color = Secondary
                         )
                     }
+                    val displayText = if (item.product.displayUnit.isNotEmpty()) {
+                        "৳${item.price}/${item.product.displayUnit} × ${item.quantity}${item.product.displayUnit} = ৳${"%.2f".format(item.price * item.quantity)}"
+                    } else {
+                        "Qty: ${item.quantity} × ৳${item.price} = ৳${"%.2f".format(item.price * item.quantity)}"
+                    }
                     Text(
-                        text = "Subtotal: ৳${"%.2f".format(item.price * item.quantity)}",
+                        text = displayText,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )

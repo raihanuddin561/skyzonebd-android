@@ -59,45 +59,51 @@ class CartViewModel @Inject constructor(
     
     fun addToCart(product: Product, quantity: Int) {
         viewModelScope.launch {
-            Log.d(TAG, "=== ADD TO CART START ===")
-            Log.d(TAG, "addToCart - Product: ${product.name}, Quantity: $quantity")
-            Log.d(TAG, "Current cart items before add: ${cartItems.value.size}")
-            
-            val existingItems = cartItems.value.toMutableList()
-            val existingItemIndex = existingItems.indexOfFirst { it.productId == product.id }
-            
-            if (existingItemIndex >= 0) {
-                // Update quantity of existing item
-                val existingItem = existingItems[existingItemIndex]
-                val newQuantity = existingItem.quantity + quantity
-                Log.d(TAG, "Updating existing item quantity: ${existingItem.quantity} -> $newQuantity")
-                existingItems[existingItemIndex] = existingItem.copy(
-                    quantity = newQuantity,
-                    total = product.retailPrice * newQuantity
-                )
-            } else {
-                // Add new item
-                Log.d(TAG, "Adding new item to cart")
-                val newItem = CartItem(
-                    id = "${product.id}_${System.currentTimeMillis()}",
-                    productId = product.id,
-                    product = product,
-                    quantity = quantity,
-                    price = product.retailPrice,
-                    total = product.retailPrice * quantity
-                )
-                existingItems.add(newItem)
-                Log.d(TAG, "New item created with ID: ${newItem.id}")
+            try {
+                Log.d(TAG, "=== ADD TO CART START ===")
+                Log.d(TAG, "addToCart - Product: ${product.name}, Quantity: $quantity")
+                Log.d(TAG, "Current cart items before add: ${cartItems.value.size}")
+                
+                val existingItems = cartItems.value.toMutableList()
+                val existingItemIndex = existingItems.indexOfFirst { it.productId == product.id }
+                
+                if (existingItemIndex >= 0) {
+                    // Update quantity of existing item
+                    val existingItem = existingItems[existingItemIndex]
+                    val newQuantity = existingItem.quantity + quantity
+                    Log.d(TAG, "Updating existing item quantity: ${existingItem.quantity} -> $newQuantity")
+                    existingItems[existingItemIndex] = existingItem.copy(
+                        quantity = newQuantity,
+                        total = product.retailPrice * newQuantity
+                    )
+                } else {
+                    // Add new item
+                    Log.d(TAG, "Adding new item to cart")
+                    val newItem = CartItem(
+                        id = "${product.id}_${System.currentTimeMillis()}",
+                        productId = product.id,
+                        product = product,
+                        quantity = quantity,
+                        price = product.retailPrice,
+                        total = product.retailPrice * quantity
+                    )
+                    existingItems.add(newItem)
+                    Log.d(TAG, "New item created with ID: ${newItem.id}")
+                }
+                
+                Log.d(TAG, "About to save ${existingItems.size} items")
+                saveCartToPreferences(existingItems)
+                Log.d(TAG, "Save completed")
+                
+                // Wait for DataStore to propagate changes
+                kotlinx.coroutines.delay(200)
+                Log.d(TAG, "After save, cartItems.value has: ${cartItems.value.size} items")
+                Log.d(TAG, "Item count: ${_itemCount.value}")
+                Log.d(TAG, "=== ADD TO CART END ===")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding to cart", e)
+                e.printStackTrace()
             }
-            
-            Log.d(TAG, "About to save ${existingItems.size} items")
-            saveCartToPreferences(existingItems)
-            Log.d(TAG, "Save completed")
-            
-            // Wait a bit and check what's in cartItems.value
-            kotlinx.coroutines.delay(100)
-            Log.d(TAG, "After save, cartItems.value has: ${cartItems.value.size} items")
-            Log.d(TAG, "=== ADD TO CART END ===")
         }
     }
     

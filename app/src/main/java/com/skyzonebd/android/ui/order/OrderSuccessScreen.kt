@@ -433,7 +433,7 @@ fun OrderItemCard(item: com.skyzonebd.android.data.model.OrderItem) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Qty: ${item.quantity} × ৳${String.format("%.2f", item.price)}",
+                    text = "Qty: ${item.quantity}${item.unit} × ৳${String.format("%.2f", item.price)}/${item.unit}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

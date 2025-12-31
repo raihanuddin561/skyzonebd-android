@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,8 +39,8 @@ class PreferencesManager @Inject constructor(
     }
     
     init {
-        // Migrate old data format on first access
-        runBlocking {
+        // Migrate old data format in background coroutine (non-blocking)
+        coroutineScope.launch {
             val storedVersion = dataStore.data.first()[DATA_VERSION_KEY]
             if (storedVersion != CURRENT_DATA_VERSION) {
                 android.util.Log.d("PreferencesManager", "Data version mismatch. Clearing old data. Old version: $storedVersion, Current: $CURRENT_DATA_VERSION")
@@ -65,9 +65,23 @@ class PreferencesManager @Inject constructor(
         }
     }
     
+    /**
+     * Synchronous token access for OkHttp interceptor.
+     * Uses firstOrNull to avoid blocking indefinitely.
+     * This is called on OkHttp's thread pool, not the main thread.
+     */
     fun getToken(): String? {
-        return runBlocking {
-            dataStore.data.first()[TOKEN_KEY]
+        return try {
+            // This is acceptable here because:
+            // 1. Called from OkHttp's background thread (not main thread)
+            // 2. DataStore reads are fast (memory-backed)
+            // 3. Network requests already operate on background threads
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                dataStore.data.firstOrNull()?.get(TOKEN_KEY)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PreferencesManager", "Error reading token", e)
+            null
         }
     }
     

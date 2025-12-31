@@ -462,7 +462,7 @@ fun ProductGridItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "৳${product.retailPrice}",
+                            text = if (product.displayUnit.isNotEmpty()) "৳${product.retailPrice}/${product.displayUnit}" else "৳${product.retailPrice}",
                             style = MaterialTheme.typography.bodySmall,
                             textDecoration = TextDecoration.LineThrough,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -471,7 +471,7 @@ fun ProductGridItem(
                         Spacer(modifier = Modifier.width(4.dp))
                         
                         Text(
-                            text = "৳$displayPrice",
+                            text = if (product.displayUnit.isNotEmpty()) "৳$displayPrice/${product.displayUnit}" else "৳$displayPrice",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = Primary
@@ -496,7 +496,7 @@ fun ProductGridItem(
                     }
                 } else {
                     Text(
-                        text = "৳$displayPrice",
+                        text = if (product.displayUnit.isNotEmpty()) "৳$displayPrice/${product.displayUnit}" else "৳$displayPrice",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = Primary

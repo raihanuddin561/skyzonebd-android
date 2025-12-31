@@ -31,19 +31,37 @@ class OrderRepository @Inject constructor(
         try {
             emit(Resource.Loading())
             
+            android.util.Log.d(TAG, "Fetching orders - page: $page, limit: $limit")
             val response = apiService.getOrders(page, limit)
             
+            android.util.Log.d(TAG, "Orders response code: ${response.code()}")
+            
             if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    emit(Resource.Success(apiResponse.data))
+                val ordersResponse = response.body()
+                android.util.Log.d(TAG, "Orders received: ${ordersResponse?.orders?.size ?: 0} orders")
+                
+                if (ordersResponse != null) {
+                    emit(Resource.Success(ordersResponse))
                 } else {
-                    emit(Resource.Error(apiResponse?.message ?: apiResponse?.error ?: "Failed to load orders"))
+                    emit(Resource.Error("No orders data received"))
                 }
             } else {
-                emit(Resource.Error("Failed to load orders: ${response.message()}"))
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.e(TAG, "Failed to load orders. Code: ${response.code()}, Body: $errorBody")
+                
+                val errorMessage = try {
+                    val jsonObject = gson.fromJson(errorBody, JsonObject::class.java)
+                    jsonObject.get("error")?.asString 
+                        ?: jsonObject.get("message")?.asString 
+                        ?: "Failed to load orders"
+                } catch (e: Exception) {
+                    "Failed to load orders: ${response.message()}"
+                }
+                
+                emit(Resource.Error(errorMessage))
             }
         } catch (e: Exception) {
+            android.util.Log.e(TAG, "Exception loading orders", e)
             emit(Resource.Error(e.message ?: "Network error occurred"))
         }
     }
@@ -52,19 +70,37 @@ class OrderRepository @Inject constructor(
         try {
             emit(Resource.Loading())
             
+            android.util.Log.d(TAG, "Fetching order details for ID: $id")
             val response = apiService.getOrder(id)
             
+            android.util.Log.d(TAG, "Order detail response code: ${response.code()}")
+            
             if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    emit(Resource.Success(apiResponse.data))
+                val order = response.body()
+                android.util.Log.d(TAG, "Order received: ${order?.id}")
+                
+                if (order != null) {
+                    emit(Resource.Success(order))
                 } else {
-                    emit(Resource.Error(apiResponse?.message ?: apiResponse?.error ?: "Failed to load order"))
+                    emit(Resource.Error("No order data received"))
                 }
             } else {
-                emit(Resource.Error("Failed to load order: ${response.message()}"))
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.e(TAG, "Failed to load order. Code: ${response.code()}, Body: $errorBody")
+                
+                val errorMessage = try {
+                    val jsonObject = gson.fromJson(errorBody, JsonObject::class.java)
+                    jsonObject.get("error")?.asString 
+                        ?: jsonObject.get("message")?.asString 
+                        ?: "Failed to load order"
+                } catch (e: Exception) {
+                    "Failed to load order: ${response.message()}"
+                }
+                
+                emit(Resource.Error(errorMessage))
             }
         } catch (e: Exception) {
+            android.util.Log.e(TAG, "Exception loading order details", e)
             emit(Resource.Error(e.message ?: "Network error occurred"))
         }
     }

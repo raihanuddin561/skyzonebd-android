@@ -19,7 +19,7 @@ class ProductRepository @Inject constructor(
     
     fun getProducts(
         page: Int = 1,
-        limit: Int = 12,
+        limit: Int = 20, // Reduced from 100 for faster loading
         categorySlug: String? = null,
         search: String? = null,
         isFeatured: Boolean? = null,

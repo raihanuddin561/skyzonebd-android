@@ -6,6 +6,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Load keystore properties
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = java.util.Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.skyzonebd.android"
     compileSdk = 35
@@ -14,8 +21,8 @@ android {
         applicationId = "com.skyzonebd.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 14
+        versionName = "1.0.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -33,19 +40,18 @@ android {
 
     signingConfigs {
         create("release") {
-            // Store passwords as environment variables for security
-            // Set in your system: KEYSTORE_PASSWORD and KEY_PASSWORD
-            storeFile = file("../skyzonebd-release-key.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "temp_password"
-            keyAlias = "skyzonebd"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "temp_password"
+            // Read from keystore.properties (not committed to git)
+            storeFile = file("../" + keystoreProperties["RELEASE_STORE_FILE"])
+            storePassword = keystoreProperties["RELEASE_STORE_PASSWORD"] as String
+            keyAlias = keystoreProperties["RELEASE_KEY_ALIAS"] as String
+            keyPassword = keystoreProperties["RELEASE_KEY_PASSWORD"] as String
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = true  // Enabled for smaller APK and better security
+            isShrinkResources = true  // Remove unused resources
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

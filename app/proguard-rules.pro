@@ -50,11 +50,21 @@
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
+
+# Keep all fields annotated with @SerializedName
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
 }
+
 # Keep generic signature of Call, Response (R8 full mode strips signatures from non-kept items)
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
+
+# Gson TypeToken - required for generic type handling like List<CartItem>
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken {
+  <init>();
+}
 
 # Keep all API response models - CRITICAL for network calls
 -keep class com.skyzonebd.android.data.remote.ApiResponse { *; }
@@ -131,21 +141,45 @@
 -keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**
 
-# DataStore
+# DataStore - Keep for cart persistence
 -keep class androidx.datastore.*.** { *; }
+-keep class androidx.datastore.core.** { *; }
+-keep class androidx.datastore.preferences.core.** { *; }
 
 # Cart functionality - CRITICAL for cart to work in release builds
+# CartItem contains Product, so both must be kept with all fields intact
+-keep class com.skyzonebd.android.data.model.Product { *; }
+-keep class com.skyzonebd.android.data.model.WholesaleTier { *; }
 -keep class com.skyzonebd.android.data.model.CartItem { *; }
 -keep class com.skyzonebd.android.data.model.Cart { *; }
+-keep class com.skyzonebd.android.data.model.Address { *; }
+-keep class com.skyzonebd.android.data.model.AddressType { *; }
 -keep class com.skyzonebd.android.data.local.CartPreferences { *; }
+
+# Keep all members and SerializedName annotations for proper JSON serialization
+-keepclassmembers class com.skyzonebd.android.data.model.Product { *; }
+-keepclassmembers class com.skyzonebd.android.data.model.WholesaleTier { *; }
 -keepclassmembers class com.skyzonebd.android.data.model.CartItem { *; }
 -keepclassmembers class com.skyzonebd.android.data.model.Cart { *; }
+
+# Keep methods in CartItem and Product that are used for business logic
+-keepclassmembers class com.skyzonebd.android.data.model.CartItem {
+    public *** canAddMore(...);
+    public *** meetsMinimumQuantity(...);
+}
+-keepclassmembers class com.skyzonebd.android.data.model.Product {
+    public *** getDisplayPrice(...);
+    public *** getWholesalePrice(...);
+    public *** getDiscountPercentage(...);
+    public *** isInStock(...);
+    public *** get*();
+}
 
 # Coil Image Loading
 -dontwarn coil.**
 -keep class coil.** { *; }
 
-# Remove logging in release builds
+# Remove debug/verbose logging in release builds, but keep error logs for troubleshooting
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
@@ -157,6 +191,11 @@
     public static *** v(...);
     public static *** i(...);
 }
+
+# Keep error logs for crash diagnostics
+# public static *** e(...);
+# public static *** w(...);
+# public static *** wtf(...);
 
 # Preserve crash reporting info
 -keepattributes *Annotation*

@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Exclude sensitive user data from backups -->
-    <exclude domain="datastore" path="." />
-    <exclude domain="sharedpref" path="skyzone_preferences.xml" />
-    <exclude domain="sharedpref" path="cart_preferences.xml" />
-    <exclude domain="database" path="skyzone_database.db" />
-    <!-- Include cache for better user experience -->
+    <!-- Exclude DataStore files (sensitive user data) -->
+    <exclude domain="file" path="datastore" />
+    <!-- Include other app files -->
     <include domain="file" path="." />
 </full-backup-content>

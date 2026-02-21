@@ -13,14 +13,14 @@ object AppConfig {
     const val COMPANY_ADDRESS = "Dhaka, Bangladesh"
     
     // Website & Social Links
-    const val WEBSITE_URL = "https://skyzonebd.vercel.app"
+    const val WEBSITE_URL = "https://skyzonebd.shop"
     const val FACEBOOK_URL = "https://facebook.com/skyzonebd"
     const val INSTAGRAM_URL = "https://instagram.com/skyzonebd"
     const val TWITTER_URL = "https://twitter.com/skyzonebd"
     
     // API Configuration
-    const val API_BASE_URL = "https://skyzonebd.vercel.app/api/"
-    const val API_TIMEOUT = 30L // seconds
+    const val API_BASE_URL = "https://skyzonebd.shop/api/"
+    const val API_TIMEOUT = 90L // seconds (increased for slow backend)
     
     // App Information
     const val APP_VERSION = "1.0.0"

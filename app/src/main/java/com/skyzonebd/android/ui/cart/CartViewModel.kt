@@ -74,7 +74,7 @@ class CartViewModel @Inject constructor(
                     Log.d(TAG, "Updating existing item quantity: ${existingItem.quantity} -> $newQuantity")
                     existingItems[existingItemIndex] = existingItem.copy(
                         quantity = newQuantity,
-                        total = product.retailPrice * newQuantity
+                        total = (product.retailPrice ?: product.price) * newQuantity
                     )
                 } else {
                     // Add new item
@@ -84,8 +84,8 @@ class CartViewModel @Inject constructor(
                         productId = product.id,
                         product = product,
                         quantity = quantity,
-                        price = product.retailPrice,
-                        total = product.retailPrice * quantity
+                        price = product.retailPrice ?: product.price,
+                        total = (product.retailPrice ?: product.price) * quantity
                     )
                     existingItems.add(newItem)
                     Log.d(TAG, "New item created with ID: ${newItem.id}")
@@ -188,10 +188,11 @@ class CartViewModel @Inject constructor(
     fun updatePricesForUserType(userType: UserType) {
         viewModelScope.launch {
             val updatedItems = cartItems.value.map { item ->
-                val newPrice = when (userType) {
-                    UserType.RETAIL -> item.product.retailPrice
-                    UserType.WHOLESALE -> item.product.wholesalePrice ?: item.product.retailPrice
-                    UserType.GUEST -> item.product.retailPrice
+                // All users get wholesale pricing now
+                val newPrice = if (item.product.wholesalePrice != null && item.product.wholesaleEnabled) {
+                    item.product.wholesalePrice
+                } else {
+                    item.product.retailPrice ?: item.product.price
                 }
                 item.copy(
                     price = newPrice,
@@ -204,7 +205,8 @@ class CartViewModel @Inject constructor(
     
     fun getTotalSavings(): Double {
         return cartItems.value.sumOf { item ->
-            (item.product.retailPrice - item.price) * item.quantity
+            val retailPrice = item.product.retailPrice ?: item.product.price
+            (retailPrice - item.price) * item.quantity
         }
     }
 }

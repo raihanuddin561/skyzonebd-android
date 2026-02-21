@@ -126,7 +126,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // User Type Banner (B2B/B2C)
+            // Wholesale User Banner
             item {
                 UserTypeBanner(
                     userType = currentUser?.userType ?: UserType.GUEST,
@@ -325,17 +325,12 @@ fun UserTypeBanner(
     val (backgroundColor, text, icon) = when (userType) {
         UserType.WHOLESALE -> Triple(
             SecondaryLight,
-            "You're shopping as Wholesale Buyer - Get volume discounts!",
+            "Wholesale Account Active - Enjoy bulk discounts & MOQ benefits!",
             Icons.Default.Business
         )
-        UserType.RETAIL -> Triple(
+        UserType.RETAIL, UserType.GUEST -> Triple(
             Primary,
-            "Want wholesale prices? Switch to Business Account",
-            Icons.Default.Store
-        )
-        UserType.GUEST -> Triple(
-            Info,
-            "Sign up for exclusive deals and wholesale pricing",
+            "Sign up for wholesale pricing - Minimum 10 units per order",
             Icons.Default.Person
         )
     }
@@ -578,7 +573,7 @@ fun DefaultHeroSection() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Your B2B & B2C Marketplace",
+                    text = "Bangladesh's #1 B2B Wholesale Marketplace",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White
                 )
@@ -725,7 +720,8 @@ fun ProductCard(
     val displayPrice = remember(product, userType) { product.getDisplayPrice(userType) }
     val discountPercentage = remember(product) { product.getDiscountPercentage() }
     val hasDiscount = remember(displayPrice, product.retailPrice) { 
-        discountPercentage != null && displayPrice < product.retailPrice 
+        val retail = product.retailPrice
+        discountPercentage != null && retail != null && displayPrice < retail 
     }
     
     Card(

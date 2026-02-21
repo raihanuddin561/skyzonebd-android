@@ -7,38 +7,75 @@
 # Data models - keep all fields for serialization
 -keepattributes Signature
 -keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+
+# Keep all data model classes and their members
 -keep class com.skyzonebd.android.data.model.** { *; }
 -keepclassmembers class com.skyzonebd.android.data.model.** { *; }
+
+# Specifically keep BusinessInfo nested class
+-keep class com.skyzonebd.android.data.model.BusinessInfo { *; }
+-keepclassmembers class com.skyzonebd.android.data.model.BusinessInfo { *; }
 
 # Keep enum methods for custom deserializers
 -keepclassmembers enum com.skyzonebd.android.data.model.UserType {
     public static **[] values();
     public static ** valueOf(java.lang.String);
     public static ** fromString(java.lang.String);
+    *;
 }
 -keepclassmembers enum com.skyzonebd.android.data.model.UserRole {
     public static **[] values();
     public static ** valueOf(java.lang.String);
     public static ** fromString(java.lang.String);
+    *;
+}
+-keepclassmembers enum com.skyzonebd.android.data.model.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    *;
+}
+
+# Keep all enum classes
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    **[] $VALUES;
+    public *;
 }
 
 # Retrofit
 -keepattributes Signature, InnerClasses, EnclosingMethod
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes Exceptions
+
+# Keep Retrofit interfaces and their methods
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# Keep all methods annotated with Retrofit HTTP annotations
 -keepclassmembers,allowshrinking,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
+
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
 -keep interface retrofit2.** { *; }
+
+# Keep Retrofit service interfaces - prevent method stripping
+-keep interface * {
+    @retrofit2.http.* <methods>;
+}
 
 # Keep ApiService interface - CRITICAL for release builds
 -keep interface com.skyzonebd.android.data.remote.ApiService { *; }
 -keep class com.skyzonebd.android.data.remote.ApiService { *; }
 -keep class com.skyzonebd.android.data.remote.** { *; }
+-keepclassmembers interface com.skyzonebd.android.data.remote.ApiService {
+    *;
+}
 
 # Gson
 -keepattributes Signature
@@ -51,10 +88,16 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 
-# Keep all fields annotated with @SerializedName
+# Keep all fields annotated with @SerializedName - CRITICAL for JSON parsing
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
 }
+
+# Prevent ProGuard from stripping interface information from TypeAdapter, TypeAdapterFactory
+-keep class * extends com.google.gson.TypeAdapter
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
 
 # Keep generic signature of Call, Response (R8 full mode strips signatures from non-kept items)
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
@@ -66,32 +109,87 @@
   <init>();
 }
 
+# Generic types used in Retrofit responses
+-keepattributes Signature
+-keepattributes Exceptions
+-keepattributes InnerClasses
+
 # Keep all API response models - CRITICAL for network calls
 -keep class com.skyzonebd.android.data.remote.ApiResponse { *; }
 -keep class com.skyzonebd.android.data.remote.** { *; }
+-keepclassmembers class com.skyzonebd.android.data.remote.** { *; }
+
+# Keep all response/request data classes
+-keep class * implements java.io.Serializable { *; }
+-keepclassmembers class * implements java.io.Serializable {
+    *;
+}
+
+# Keep lambda expressions used in Gson type adapters
+-keepclassmembers class com.skyzonebd.android.di.NetworkModule {
+    *;
+}
+-keep class com.skyzonebd.android.di.NetworkModule$* { *; }
 
 # OkHttp
 -dontwarn okhttp3.**
 -dontwarn okio.**
+-dontwarn javax.annotation.**
+-dontwarn org.conscrypt.**
+
+# Keep OkHttp classes
 -keep class okhttp3.** { *; }
 -keep interface okhttp3.** { *; }
 -keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
+# Keep OkHttp Platform used for TLS
+-keep class okhttp3.internal.platform.** { *; }
+-keep interface okhttp3.internal.platform.** { *; }
+
 # Keep AuthInterceptor for authenticated requests
 -keep class com.skyzonebd.android.data.remote.AuthInterceptor { *; }
+-keepclassmembers class com.skyzonebd.android.data.remote.AuthInterceptor {
+    *;
+}
 
 # Keep SSL/TLS classes for HTTPS
 -keep class javax.net.ssl.** { *; }
 -keep class org.conscrypt.** { *; }
--dontwarn org.conscrypt.**
+-keep class sun.security.ssl.** { *; }
+
+# Keep certificate pinning and security config
+-keep class android.security.net.config.** { *; }
 
 # Hilt
 -dontwarn com.google.errorprone.annotations.**
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# Keep all classes and methods annotated with Hilt annotations
 -keepclasseswithmembers class * {
     @dagger.* <methods>;
+}
+-keepclasseswithmembers class * {
+    @dagger.* <fields>;
+}
+-keepclasseswithmembers class * {
+    @javax.inject.* <methods>;
+}
+-keepclasseswithmembers class * {
+    @javax.inject.* <fields>;
+}
+
+# Keep Hilt generated classes
+-keep class **_HiltModules { *; }
+-keep class **_HiltComponents { *; }
+-keep class **_Factory { *; }
+-keep class **_MembersInjector { *; }
+
+# Keep NetworkModule and its methods
+-keep class com.skyzonebd.android.di.NetworkModule { *; }
+-keepclassmembers class com.skyzonebd.android.di.NetworkModule {
+    *;
 }
 
 # Keep Repository classes - they're injected by Hilt
@@ -107,6 +205,13 @@
 -keepclassmembers class ** {
     @kotlin.Metadata <fields>;
 }
+-keep class kotlin.reflect.** { *; }
+-keep interface kotlin.reflect.** { *; }
+
+# Keep Kotlin internal classes used by Retrofit and Gson
+-keep class kotlin.** { *; }
+-keep class kotlin.jvm.** { *; }
+-dontwarn kotlin.**
 
 # Jetpack Compose
 -keep class androidx.compose.runtime.** { *; }
@@ -128,6 +233,7 @@
     volatile <fields>;
 }
 -dontwarn kotlinx.coroutines.**
+-keep class kotlinx.coroutines.** { *; }
 
 # Keep Kotlin suspend functions - used in Repository and ViewModel
 -keepclassmembers class * {
@@ -135,6 +241,11 @@
     *** *Suspended(...);
 }
 -keep class kotlin.coroutines.Continuation
+-keep class kotlin.coroutines.** { *; }
+
+# Keep Flow and StateFlow
+-keep class kotlinx.coroutines.flow.** { *; }
+-keepclassmembers class kotlinx.coroutines.flow.** { *; }
 
 # Room Database
 -keep class * extends androidx.room.RoomDatabase
@@ -155,6 +266,19 @@
 -keep class com.skyzonebd.android.data.model.Address { *; }
 -keep class com.skyzonebd.android.data.model.AddressType { *; }
 -keep class com.skyzonebd.android.data.local.CartPreferences { *; }
+
+# Keep all response wrapper classes
+-keep class com.skyzonebd.android.data.model.ProductsResponse { *; }
+-keep class com.skyzonebd.android.data.model.ProductDetailResponse { *; }
+-keep class com.skyzonebd.android.data.model.CategoriesResponse { *; }
+-keep class com.skyzonebd.android.data.model.OrdersResponse { *; }
+-keep class com.skyzonebd.android.data.model.CreateOrderResponse { *; }
+-keep class com.skyzonebd.android.data.model.CreateOrderRequest { *; }
+-keep class com.skyzonebd.android.data.model.AuthResponse { *; }
+-keep class com.skyzonebd.android.data.model.LoginRequest { *; }
+-keep class com.skyzonebd.android.data.model.RegisterRequest { *; }
+-keep class com.skyzonebd.android.data.remote.ApiResponse { *; }
+-keep class com.skyzonebd.android.data.remote.ChangePasswordRequest { *; }
 
 # Keep all members and SerializedName annotations for proper JSON serialization
 -keepclassmembers class com.skyzonebd.android.data.model.Product { *; }
@@ -216,5 +340,53 @@
 -keep class com.skyzonebd.android.BuildConfig { *; }
 -keepclassmembers class com.skyzonebd.android.BuildConfig {
     public static <fields>;
+    public static java.lang.String API_URL;
+    public static java.lang.String BASE_URL;
 }
+
+# Keep PreferencesManager for token storage
+-keep class com.skyzonebd.android.data.local.PreferencesManager { *; }
+-keepclassmembers class com.skyzonebd.android.data.local.PreferencesManager {
+    *;
+}
+
+# Prevent stripping of default parameter metadata
+-keepattributes MethodParameters
+
+# Keep Resource sealed class and subclasses for network state management
+-keep class com.skyzonebd.android.util.Resource { *; }
+-keep class com.skyzonebd.android.util.Resource$* { *; }
+-keepclassmembers class com.skyzonebd.android.util.Resource$* { *; }
+
+# DNS and Network Resolution - CRITICAL for production connectivity
+-keep class java.net.** { *; }
+-keep class javax.net.** { *; }
+-keep class sun.net.spi.nameservice.** { *; }
+-keep class sun.net.www.protocol.** { *; }
+
+# Keep Android Network Security Config
+-keep class android.security.net.config.** { *; }
+-keepclassmembers class android.security.net.config.** { *; }
+
+# Keep Certificate and SSL classes for HTTPS
+-keep class java.security.cert.** { *; }
+-keep class javax.security.cert.** { *; }
+-keep class javax.net.ssl.** { *; }
+-keep interface javax.net.ssl.** { *; }
+
+# OkHttp DNS and Connection Pool
+-keep class okhttp3.Dns { *; }
+-keep class okhttp3.ConnectionPool { *; }
+-keep class okhttp3.internal.connection.** { *; }
+-keep class okhttp3.internal.http.** { *; }
+-keep class okhttp3.internal.tls.** { *; }
+
+# Retrofit Call Adapters
+-keep class retrofit2.Call { *; }
+-keep class retrofit2.Callback { *; }
+-keep class retrofit2.Response { *; }
+
+# Keep Conscrypt for TLS 1.3 support
+-keep class org.conscrypt.** { *; }
+-dontwarn org.conscrypt.**
 

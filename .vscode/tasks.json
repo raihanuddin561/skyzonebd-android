@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Release AAB",
+			"type": "shell",
+			"command": ".\\gradlew bundleRelease",
+			"isBackground": false,
+			"problemMatcher": [
+				"$kotlinc"
+			],
+			"group": "build"
+		}
+	]
+}

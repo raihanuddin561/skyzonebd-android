@@ -17,6 +17,8 @@ Successfully updated the SkyzoneBD Android app to support the new **Unit Managem
 
 #### Product Model (`Product.kt`)
 - ✅ Added `unit: String` field with default value "piece"
+
+
 - ✅ Field properly annotated with `@SerializedName("unit")`
 - ✅ Backward compatible with default fallback value
 

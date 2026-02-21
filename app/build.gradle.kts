@@ -24,8 +24,8 @@ android {
         applicationId = "com.skyzonebd.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.0.16"
+        versionCode = 24  // UI overhaul - attractive design, payment options, profile improvements
+        versionName = "2.2.0"  // UI redesign - branded login, profile header, disabled payments
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -33,9 +33,9 @@ android {
         manifestPlaceholders["appName"] = "SkyzoneBD - B2B & B2C Shopping"
         manifestPlaceholders["appDescription"] = "Bangladesh's premier B2B and B2C marketplace"
         
-        // API Base URL - Update this to your Vercel deployment URL
-        buildConfigField("String", "BASE_URL", "\"https://skyzonebd.vercel.app/\"")
-        buildConfigField("String", "API_URL", "\"https://skyzonebd.vercel.app/api/\"")
+        // API Base URL - Production domain
+        buildConfigField("String", "BASE_URL", "\"https://skyzonebd.shop/\"")
+        buildConfigField("String", "API_URL", "\"https://skyzonebd.shop/api/\"")
         
         // App metadata for Play Store
         resValue("string", "google_play_services_version", "12451000")
@@ -60,12 +60,12 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
-            buildConfigField("String", "BASE_URL", "\"https://skyzonebd.vercel.app/\"")
-            buildConfigField("String", "API_URL", "\"https://skyzonebd.vercel.app/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://skyzonebd.shop/\"")
+            buildConfigField("String", "API_URL", "\"https://skyzonebd.shop/api/\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://skyzonebd.vercel.app/\"")
-            buildConfigField("String", "API_URL", "\"https://skyzonebd.vercel.app/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://skyzonebd.shop/\"")
+            buildConfigField("String", "API_URL", "\"https://skyzonebd.shop/api/\"")
         }
     }
     

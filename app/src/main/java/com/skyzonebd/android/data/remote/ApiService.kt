@@ -6,7 +6,8 @@ import retrofit2.http.*
 
 /**
  * API Service interface for SkyzoneBD backend
- * Base URL: https://skyzonebd.vercel.app/api/
+ * Base URL: https://skyzonebd.shop/api/
+ * All endpoints are relative to this base URL
  */
 interface ApiService {
     

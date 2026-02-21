@@ -1,9 +1,9 @@
 <resources>
     <!-- App Name - SEO Optimized -->
     <string name="app_name">SkyzoneBD</string>
-    <string name="app_name_full">SkyzoneBD - B2B &amp; B2C Shopping</string>
-    <string name="app_description">Bangladesh\'s premier B2B and B2C marketplace for wholesale and retail shopping with best prices and fast delivery</string>
-    <string name="app_tagline">Shop Wholesale &amp; Retail - Best Prices in Bangladesh</string>
+    <string name="app_name_full">SkyzoneBD - B2B Wholesale Marketplace</string>
+    <string name="app_description">Bangladesh\'s premier B2B wholesale marketplace for bulk ordering with tiered discounts and MOQ benefits</string>
+    <string name="app_tagline">Wholesale B2B Platform - Bulk Orders, Volume Discounts</string>
     
     <!-- Privacy & Legal -->
     <string name="privacy_policy_url">https://skyzonebd.vercel.app/privacy-policy</string>
@@ -75,7 +75,7 @@
     <string name="data_sharing_info">We do not share your personal information with third parties without your explicit consent.</string>
     
     <!-- SEO Keywords (not displayed, used for app indexing) -->
-    <string name="keywords_b2b">B2B marketplace, wholesale shopping, bulk buying, business supplies, wholesale prices</string>
-    <string name="keywords_b2c">retail shopping, online shopping Bangladesh, e-commerce, best prices, online store</string>
-    <string name="keywords_location">Bangladesh shopping, Dhaka online shopping, Chittagong marketplace, Sylhet shopping</string>
+    <string name="keywords_b2b">B2B marketplace, wholesale shopping, bulk buying, business supplies, wholesale prices, MOQ, tiered pricing, wholesale distributor</string>
+    <string name="keywords_wholesale">wholesale Bangladesh, bulk orders, business marketplace, trade wholesale, B2B platform, wholesale center</string>
+    <string name="keywords_location">Bangladesh wholesale, Dhaka wholesale market, Chittagong B2B, Sylhet business supplies</string>
 </resources>

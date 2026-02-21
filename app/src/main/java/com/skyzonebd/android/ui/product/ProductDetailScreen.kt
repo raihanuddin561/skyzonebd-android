@@ -856,34 +856,42 @@ fun BottomAddToCartBar(
         shadowElevation = 8.dp,
         color = Color.White
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
                 onClick = onAddToCart,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Secondary
                 ),
                 enabled = product.stock > 0
             ) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add to Cart")
+                Text("Add to Cart", style = MaterialTheme.typography.titleMedium)
             }
             
             Button(
                 onClick = onBuyNow,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Primary
                 ),
                 enabled = product.stock > 0
             ) {
-                Text("Buy Now")
+                Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Buy Now", style = MaterialTheme.typography.titleMedium)
             }
         }
     }

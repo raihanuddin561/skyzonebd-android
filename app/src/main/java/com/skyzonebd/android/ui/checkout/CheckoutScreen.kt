@@ -2,10 +2,12 @@ package com.skyzonebd.android.ui.checkout
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,9 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.skyzonebd.android.data.model.Address
@@ -45,6 +50,7 @@ fun CheckoutScreen(
     var note by remember { mutableStateOf("") }
     var shippingAddressText by remember { mutableStateOf("") }
     var billingAddressText by remember { mutableStateOf("") }
+    var paymentReference by remember { mutableStateOf("") }  // Transaction ID for manual payments
     
     // Guest user fields
     var guestName by remember { mutableStateOf("") }
@@ -62,7 +68,7 @@ fun CheckoutScreen(
         userMobile = currentUser?.phone ?: ""
     }
     
-    // Get available payment methods (all for now)
+    // Only Cash on Delivery is currently active; others are coming soon
     val availablePaymentMethods = listOf(
         PaymentMethod.CASH_ON_DELIVERY,
         PaymentMethod.BKASH,
@@ -71,6 +77,13 @@ fun CheckoutScreen(
         PaymentMethod.BANK_TRANSFER,
         PaymentMethod.CREDIT_CARD
     )
+
+    // Methods that are enabled (only Cash on Delivery for now)
+    val enabledPaymentMethods = setOf(PaymentMethod.CASH_ON_DELIVERY)
+    
+    // Check if current payment method requires transaction ID
+    val requiresPaymentReference = paymentMethod == PaymentMethod.BKASH || 
+                                   paymentMethod == PaymentMethod.BANK_TRANSFER
     
     // Track if navigation has been triggered to prevent re-navigation
     // Using rememberSaveable to persist across configuration changes
@@ -175,7 +188,8 @@ fun CheckoutScreen(
                             guestMobile = guestMobile,
                             guestCompany = guestCompany.takeIf { it.isNotBlank() },
                             shippingAddress = finalShippingAddress,
-                            billingAddress = finalBillingAddress
+                            billingAddress = finalBillingAddress,
+                            paymentReference = paymentReference.takeIf { requiresPaymentReference && it.isNotBlank() }
                         )
                     } else {
                         // Registered user checkout
@@ -185,14 +199,16 @@ fun CheckoutScreen(
                             note = note.takeIf { it.isNotBlank() },
                             shippingAddress = finalShippingAddress,
                             billingAddress = finalBillingAddress,
-                            mobile = userMobile
+                            mobile = userMobile,
+                            paymentReference = paymentReference.takeIf { requiresPaymentReference && it.isNotBlank() }
                         )
                     }
                 },
                 enabled = (shippingAddressText.isNotBlank() || billingAddressText.isNotBlank()) &&
                         orderState !is Resource.Loading &&
                         (!isGuest || (guestName.isNotBlank() && guestMobile.isNotBlank())) &&
-                        (isGuest || userMobile.isNotBlank())
+                        (isGuest || userMobile.isNotBlank()) &&
+                        (!requiresPaymentReference || paymentReference.length >= 5)  // Validate transaction ID
             )
         }
     ) { padding ->
@@ -375,11 +391,101 @@ fun CheckoutScreen(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         availablePaymentMethods.forEach { method ->
+                            val isEnabled = method in enabledPaymentMethods
                             PaymentMethodOption(
                                 method = method,
                                 selected = paymentMethod == method,
-                                onSelect = { checkoutViewModel.setPaymentMethod(method) }
+                                enabled = isEnabled,
+                                onSelect = {
+                                    if (isEnabled) checkoutViewModel.setPaymentMethod(method)
+                                }
                             )
+                        }
+                    }
+                }
+            }
+            
+            // Transaction ID Section (for manual payment methods)
+            if (requiresPaymentReference) {
+                item {
+                    SectionCard(
+                        title = when (paymentMethod) {
+                            PaymentMethod.BKASH -> "bKash Transaction ID"
+                            PaymentMethod.BANK_TRANSFER -> "Bank Transfer Reference"
+                            else -> "Payment Reference"
+                        },
+                        icon = Icons.Default.Receipt
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = paymentReference,
+                                onValueChange = { paymentReference = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Transaction ID / Reference Number *") },
+                                placeholder = { 
+                                    Text(
+                                        when (paymentMethod) {
+                                            PaymentMethod.BKASH -> "e.g., 8N5A2B3C4D"
+                                            PaymentMethod.BANK_TRANSFER -> "e.g., TRX20260124ABC123"
+                                            else -> "Enter reference number"
+                                        }
+                                    ) 
+                                },
+                                isError = paymentReference.isNotBlank() && paymentReference.length < 5,
+                                supportingText = {
+                                    if (paymentReference.isNotBlank() && paymentReference.length < 5) {
+                                        Text(
+                                            "Minimum 5 characters required",
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    } else {
+                                        Text(
+                                            when (paymentMethod) {
+                                                PaymentMethod.BKASH -> "Enter the TrxID from your bKash app after sending money"
+                                                PaymentMethod.BANK_TRANSFER -> "Enter the transaction reference from your bank"
+                                                else -> "This helps us verify your payment"
+                                            }
+                                        )
+                                    }
+                                },
+                                singleLine = true
+                            )
+                            
+                            // Helper card with payment instructions
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = Primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            "How to get your Transaction ID:",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            when (paymentMethod) {
+                                                PaymentMethod.BKASH -> "1. Send money to our bKash number\n2. Open bKash app → Go to Transactions\n3. Find your payment → Copy TrxID\n4. Paste it above"
+                                                PaymentMethod.BANK_TRANSFER -> "1. Transfer money to our bank account\n2. Check your bank statement or receipt\n3. Copy the transaction reference number\n4. Paste it above"
+                                                else -> "Check your payment confirmation for the reference number"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -609,41 +715,78 @@ fun SectionCard(
 fun PaymentMethodOption(
     method: PaymentMethod,
     selected: Boolean,
+    enabled: Boolean = true,
     onSelect: () -> Unit
 ) {
+    val containerColor = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        selected -> Primary.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val borderColor = when {
+        !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        selected -> Primary
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .selectable(
-                selected = selected,
+                selected = selected && enabled,
+                enabled = enabled,
                 onClick = onSelect
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) PrimaryLight else Surface
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (selected && enabled) 2.dp else 1.dp,
+            color = borderColor
+        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (selected && enabled) 3.dp else 0.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    when (method) {
-                        PaymentMethod.CASH_ON_DELIVERY -> Icons.Default.Money
-                        PaymentMethod.BANK_TRANSFER -> Icons.Default.AccountBalance
-                        PaymentMethod.BKASH, PaymentMethod.NAGAD, PaymentMethod.ROCKET -> Icons.Default.PhoneAndroid
-                        PaymentMethod.CREDIT_CARD -> Icons.Default.CreditCard
-                        PaymentMethod.INVOICE_NET30, PaymentMethod.INVOICE_NET60 -> Icons.Default.Description
-                    },
-                    contentDescription = null,
-                    tint = if (selected) Primary else OnSurface
-                )
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                            else if (selected) Primary.copy(alpha = 0.15f)
+                            else Primary.copy(alpha = 0.08f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        when (method) {
+                            PaymentMethod.CASH_ON_DELIVERY -> Icons.Default.Money
+                            PaymentMethod.BANK_TRANSFER -> Icons.Default.AccountBalance
+                            PaymentMethod.BKASH, PaymentMethod.NAGAD, PaymentMethod.ROCKET -> Icons.Default.PhoneAndroid
+                            PaymentMethod.CREDIT_CARD -> Icons.Default.CreditCard
+                            PaymentMethod.INVOICE_NET30, PaymentMethod.INVOICE_NET60 -> Icons.Default.Description
+                        },
+                        contentDescription = null,
+                        tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                               else if (selected) Primary
+                               else Primary.copy(alpha = 0.7f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
                 Column {
                     Text(
                         when (method) {
@@ -652,25 +795,55 @@ fun PaymentMethodOption(
                             PaymentMethod.BKASH -> "bKash"
                             PaymentMethod.NAGAD -> "Nagad"
                             PaymentMethod.ROCKET -> "Rocket"
-                            PaymentMethod.CREDIT_CARD -> "Credit Card"
+                            PaymentMethod.CREDIT_CARD -> "Credit / Debit Card"
                             PaymentMethod.INVOICE_NET30 -> "Invoice (Net 30)"
                             PaymentMethod.INVOICE_NET60 -> "Invoice (Net 60)"
                         },
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (selected && enabled) FontWeight.Bold else FontWeight.Normal,
+                        color = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                else MaterialTheme.colorScheme.onSurface
                     )
-                    if (method == PaymentMethod.INVOICE_NET30 || method == PaymentMethod.INVOICE_NET60) {
+                    if (method == PaymentMethod.CASH_ON_DELIVERY && enabled) {
                         Text(
-                            "For wholesale customers only",
+                            "Pay when your order arrives",
                             style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant
+                            color = Success,
+                            fontWeight = FontWeight.Medium
                         )
+                    } else if (!enabled) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = Warning,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                "Coming Soon",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Warning,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             }
+
             RadioButton(
-                selected = selected,
-                onClick = onSelect
+                selected = selected && enabled,
+                onClick = if (enabled) onSelect else null,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Primary,
+                    unselectedColor = if (!enabled)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
     }
@@ -786,32 +959,40 @@ fun CheckoutBottomBar(
         shadowElevation = 8.dp,
         color = SurfaceLight
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column {
-                Text(
-                    "Total",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariant
-                )
-                Text(
-                    "৳$totalAmount",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Primary
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "Total",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OnSurfaceVariant
+                    )
+                    Text(
+                        "৳$totalAmount",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary
+                    )
+                }
             }
             Button(
                 onClick = onPlaceOrder,
                 enabled = enabled,
-                modifier = Modifier.height(56.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null)
+                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Place Order", style = MaterialTheme.typography.titleMedium)
             }

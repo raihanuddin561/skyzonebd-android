@@ -3,100 +3,100 @@
 ## App Title (Max 50 characters)
 
 ```
-SkyzoneBD - B2B & B2C Shopping App
+SkyzoneBD - B2B Wholesale Marketplace
 ```
 
 **Length:** 37/50 characters ✅
 
 **Alternative titles:**
-- `SkyzoneBD: Wholesale & Retail Shopping`
-- `SkyzoneBD - B2B Wholesale Marketplace`
-- `SkyzoneBD Shop - B2B & B2C Bangladesh`
+- `SkyzoneBD: Wholesale B2B Platform`
+- `SkyzoneBD - Business Wholesale Shop`
+- `SkyzoneBD B2B - Bulk Order Platform`
 
 ---
 
 ## Short Description (Max 80 characters)
 
 ```
-Shop wholesale & retail. Best B2B marketplace in Bangladesh. Bulk discounts!
+B2B wholesale marketplace. Bulk orders, volume discounts. MOQ 10+ units.
 ```
 
-**Length:** 76/80 characters ✅
+**Length:** 73/80 characters ✅
 
 **Alternative short descriptions:**
-- `B2B wholesale & B2C retail marketplace. Get bulk discounts. Shop in Bangladesh!`
-- `Best B2B & B2C shopping app. Wholesale prices, bulk discounts, fast delivery!`
+- `Wholesale B2B platform for bulk ordering. Tiered discounts. Bangladesh's #1!`
+- `Business wholesale marketplace. Buy in bulk, save more. MOQ benefits!`
 
 ---
 
 ## Full Description (Max 4000 characters)
 
 ```
-🛒 SkyzoneBD - Bangladesh's #1 B2B & B2C Marketplace
+🏢 SkyzoneBD - Bangladesh's #1 B2B Wholesale Marketplace
 
-Shop retail or wholesale with the best prices in Bangladesh! SkyzoneBD offers thousands of products for both individual buyers and businesses.
+The ultimate wholesale platform for businesses in Bangladesh! SkyzoneBD offers thousands of products at competitive wholesale prices with minimum order quantities and volume-based tiered discounts.
 
 ✨ KEY FEATURES:
 
-🏪 DUAL SHOPPING EXPERIENCE
-• B2C Retail: Buy single items at retail prices
-• B2B Wholesale: Get bulk discounts for businesses
+🏪 WHOLESALE B2B PLATFORM
+• Business-only marketplace
+• Minimum Order Quantity (MOQ) - typically 10+ units
 • Volume-based tiered pricing
-• Minimum Order Quantity (MOQ) for wholesale
-
-💰 BEST PRICES GUARANTEED
-• Competitive retail prices
-• Special wholesale rates for businesses
+• Bulk discounts on all products
 • Request for Quote (RFQ) for custom orders
-• Seasonal discounts and promotions
+
+💰 COMPETITIVE WHOLESALE PRICES
+• Best wholesale rates in Bangladesh
+• Tiered pricing - buy more, save more
+• Special bulk order discounts
+• Transparent pricing structure
+• No hidden fees
 
 📦 WIDE PRODUCT RANGE
 • Electronics & Gadgets
-• Fashion & Apparel
-• Home & Living
-• Office Supplies
+• Fashion & Apparel (wholesale)
+• Home & Living products
+• Office Supplies in bulk
 • Industrial Equipment
-• Beauty & Personal Care
-• Sports & Outdoor
-• And much more!
+• Beauty & Personal Care (bulk)
+• Sports & Outdoor gear
+• And thousands more products!
 
 🔐 SECURE & RELIABLE
+• Business verification required
 • Secure payment gateway
-• Order tracking in real-time
+• Real-time order tracking
 • Fast delivery across Bangladesh
-• 24/7 customer support
-• Easy returns & refunds
-
-📱 USER-FRIENDLY APP
-• Easy product search & filters
-• High-quality product images
-• Detailed product descriptions
-• Wishlist & saved items
-• Quick reorder from order history
-• Push notifications for deals
-
-💼 FOR BUSINESSES (B2B)
-• Register as wholesale buyer
-• Access exclusive wholesale prices
-• Bulk order management
-• Request custom quotes (RFQ)
-• Dedicated account manager
+• 24/7 business support
 • Invoice management
-• Business-friendly payment terms
 
-🛍️ FOR INDIVIDUALS (B2C)
-• No minimum order quantity
-• Easy checkout process
-• Multiple payment options
-• Track your orders in real-time
-• Save favorite products
-• Share products with friends
+📱 BUSINESS-FRIENDLY APP
+• Easy bulk order placement
+• Product search with filters
+• High-quality product images
+• Detailed specifications
+• Order history & reorder
+• Push notifications for deals
+• RFQ system for custom quotes
+
+💼 BUILT FOR BUSINESSES
+• Register with company details
+• Business verification process
+• Access to wholesale catalogs
+• Bulk order management
+• Dedicated account manager
+• Business-friendly payment terms
+• Invoice and tax documentation
+• Volume purchase tracking
 
 📈 WHY CHOOSE SKYZONEBD?
 
-✅ Trusted by thousands of customers
-✅ Genuine products only - 100% authentic
-✅ Best prices in Bangladesh - guaranteed!
+✅ Bangladesh's leading B2B wholesale platform
+✅ Genuine products - 100% authentic
+✅ Best wholesale prices guaranteed
+✅ Minimum order quantities for better pricing
+✅ Fast & reliable delivery nationwide
+✅ Excellent business support
 ✅ Fast & reliable delivery nationwide
 ✅ Excellent customer service
 ✅ Easy returns & full refunds

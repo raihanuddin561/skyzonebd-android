@@ -42,25 +42,25 @@ data class Product(
     @SerializedName("specifications")
     val specifications: Map<String, Any>? = null,
     
-    // B2C Pricing
+    // Wholesale Base Pricing (required)
     @SerializedName("retailPrice")
-    val retailPrice: Double,
+    val retailPrice: Double? = null,  // Legacy field - nullable for wholesale-only mode
     
     @SerializedName("salePrice")
     val salePrice: Double? = null,
     
     @SerializedName("retailMOQ")
-    val retailMOQ: Int = 1,
+    val retailMOQ: Int? = null,  // Legacy field - nullable
     
     @SerializedName("comparePrice")
     val comparePrice: Double? = null,
     
-    // B2B Pricing
+    // B2B Tiered Pricing
     @SerializedName("wholesaleEnabled")
     val wholesaleEnabled: Boolean = false,
     
     @SerializedName("wholesaleMOQ")
-    val wholesaleMOQ: Int = 5,
+    val wholesaleMOQ: Int = 10,
     
     @SerializedName("baseWholesalePrice")
     val baseWholesalePrice: Double? = null,
@@ -123,7 +123,11 @@ data class Product(
     val createdAt: String,
     
     @SerializedName("updatedAt")
-    val updatedAt: String
+    val updatedAt: String,
+    
+    // Wholesale Tiers - properly serialized from backend
+    @SerializedName("wholesaleTiers")
+    val wholesaleTiers: List<WholesaleTier> = emptyList()
     
     // Note: category field removed from JSON parsing to avoid conflicts
     // API sometimes returns it as string (ID) and sometimes as object
@@ -136,7 +140,7 @@ data class Product(
 ) {
     // Provide wholesaleTiers as a property with default empty list
     // to avoid parsing issues if API doesn't include it
-    val wholesaleTiers: List<WholesaleTier> get() = emptyList()
+    // REMOVED: Now properly serialized above
     
     // Helper properties for backward compatibility
     val images: List<String> get() = if (imageUrls.isNotEmpty()) imageUrls else listOf(imageUrl)
@@ -153,13 +157,13 @@ data class Product(
                 getWholesalePrice(quantity)
             }
             salePrice != null -> salePrice
-            else -> retailPrice
+            else -> retailPrice ?: price  // Fallback to price if retailPrice is null
         }
     }
     
     fun getWholesalePrice(quantity: Int): Double {
         if (!wholesaleEnabled || wholesaleTiers.isEmpty()) {
-            return baseWholesalePrice ?: retailPrice
+            return baseWholesalePrice ?: retailPrice ?: price  // Fallback to price
         }
         
         // Find the appropriate tier based on quantity
@@ -168,12 +172,13 @@ data class Product(
             .filter { it.maxQuantity == null || quantity <= it.maxQuantity }
             .maxByOrNull { it.minQuantity }
         
-        return applicableTier?.price ?: baseWholesalePrice ?: retailPrice
+        return applicableTier?.price ?: baseWholesalePrice ?: retailPrice ?: price  // Fallback to price
     }
     
     fun getDiscountPercentage(): Int? {
-        return if (salePrice != null && salePrice < retailPrice) {
-            ((retailPrice - salePrice) / retailPrice * 100).toInt()
+        val retail = retailPrice ?: return null
+        return if (salePrice != null && salePrice < retail) {
+            ((retail - salePrice) / retail * 100).toInt()
         } else null
     }
     

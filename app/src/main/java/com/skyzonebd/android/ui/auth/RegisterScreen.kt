@@ -2,6 +2,7 @@ package com.skyzonebd.android.ui.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.skyzonebd.android.ui.navigation.Screen
-import com.skyzonebd.android.ui.theme.Primary
+import com.skyzonebd.android.ui.theme.*
 import com.skyzonebd.android.util.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,6 @@ fun RegisterScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var companyName by remember { mutableStateOf("") }
-    var isB2B by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     
@@ -56,12 +56,26 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Register") },
+                title = {
+                    Text(
+                        "Create Account",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Primary,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -74,27 +88,29 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Create Account",
-                style = MaterialTheme.typography.headlineMedium,
+                text = "Create Wholesale Account",
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
-                text = "Join SkyzoneBD today",
+                text = "Join Bangladesh's #1 B2B Wholesale Marketplace",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            // Account Type Selection
+            // Wholesale Info Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isB2B) Primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
-                )
+                    containerColor = Primary.copy(alpha = 0.08f)
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
@@ -102,22 +118,25 @@ fun RegisterScreen(
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Business,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Business Account (B2B)",
+                            text = "Wholesale B2B Platform",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Get wholesale prices and bulk discounts",
+                            text = "Bulk ordering with tiered discounts • MOQ 10+ units",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
-                        checked = isB2B,
-                        onCheckedChange = { isB2B = it }
-                    )
                 }
             }
             
@@ -128,98 +147,136 @@ fun RegisterScreen(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Full Name *") },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Primary) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                )
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Email Field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email *") },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Primary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                )
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Phone Field (Required per web API)
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
                 label = { Text("Phone *") },
-                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Primary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                )
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Company Name (Required per web API)
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Company Name (Required for wholesale)
             OutlinedTextField(
                 value = companyName,
                 onValueChange = { companyName = it },
-                label = { Text("Company Name *") },
-                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
+                label = { Text("Company/Business Name *") },
+                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null, tint = Primary) },
                 singleLine = true,
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                ),
                 supportingText = {
                     Text(
-                        text = if (isB2B) "Business name for wholesale account" else "Can be your name or business name",
+                        text = "Your business or trading company name",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Password Field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password *") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Primary) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            tint = TextSecondary
                         )
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                )
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Confirm Password Field
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password *") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Primary) },
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
                             imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
+                            tint = TextSecondary
                         )
                     }
                 },
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                isError = confirmPassword.isNotEmpty() && password != confirmPassword
+                isError = confirmPassword.isNotEmpty() && password != confirmPassword,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedLabelColor = Primary,
+                    cursorColor = Primary
+                )
             )
             
             if (confirmPassword.isNotEmpty() && password != confirmPassword) {
@@ -237,7 +294,7 @@ fun RegisterScreen(
             // Register Button
             Button(
                 onClick = {
-                    if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && 
+                    if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank() &&
                         password == confirmPassword && phone.isNotBlank() && companyName.isNotBlank()) {
                         viewModel.register(
                             email = email,
@@ -245,28 +302,37 @@ fun RegisterScreen(
                             name = name,
                             phone = phone,
                             companyName = companyName,
-                            isB2B = isB2B
+                            isB2B = true  // Always wholesale now
                         )
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp),
                 enabled = registerState !is Resource.Loading &&
                         name.isNotBlank() &&
                         email.isNotBlank() &&
                         password.isNotBlank() &&
                         password == confirmPassword &&
                         phone.isNotBlank() &&
-                        companyName.isNotBlank()
+                        companyName.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
             ) {
                 if (registerState is Resource.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White
+                        color = Color.White,
+                        strokeWidth = 2.5.dp
                     )
                 } else {
-                    Text("Create Account", style = MaterialTheme.typography.titleMedium)
+                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Create Account",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             
@@ -287,9 +353,16 @@ fun RegisterScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Already have an account?")
+                Text(
+                    "Already have an account?",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 TextButton(onClick = onNavigateToLogin) {
-                    Text("Login")
+                    Text(
+                        "Login",
+                        color = Primary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

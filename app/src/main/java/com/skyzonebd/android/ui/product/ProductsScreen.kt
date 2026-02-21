@@ -594,15 +594,28 @@ fun ProductFilterDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onApply(selectedSort, selectedCategory) }
+            Button(
+                onClick = { onApply(selectedSort, selectedCategory) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Apply", color = Primary)
+                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Apply Filters", style = MaterialTheme.typography.labelLarge)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
             }
         }
     )

@@ -148,21 +148,15 @@ class AuthRepository @Inject constructor(
                 return@flow
             }
             
-            val userType = if (isB2B) 
-                com.skyzonebd.android.data.model.UserType.WHOLESALE 
-            else 
-                com.skyzonebd.android.data.model.UserType.RETAIL
-            
             val request = RegisterRequest(
                 email = email,
                 password = password,
                 name = name,
                 phone = phone,
-                companyName = companyName,
-                userType = userType
+                companyName = companyName
             )
             
-            Log.d(TAG, "Registration request: email=$email, name=$name, phone=$phone, companyName=$companyName, userType=$userType")
+            Log.d(TAG, "Registration request: email=$email, name=$name, phone=$phone, companyName=$companyName")
             
             val response = apiService.register(request)
             

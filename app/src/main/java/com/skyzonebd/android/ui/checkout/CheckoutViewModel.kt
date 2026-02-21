@@ -52,7 +52,8 @@ class CheckoutViewModel @Inject constructor(
         note: String? = null,
         shippingAddress: String,
         billingAddress: String,
-        mobile: String? = null
+        mobile: String? = null,
+        paymentReference: String? = null  // Transaction ID for bKash, bank transfer
     ) {
         // Addresses are already validated and filled in CheckoutScreen
         if (shippingAddress.isBlank() || billingAddress.isBlank()) {
@@ -84,6 +85,7 @@ class CheckoutViewModel @Inject constructor(
                 shippingAddress = shippingAddress,
                 billingAddress = billingAddress,
                 paymentMethod = _paymentMethod.value.name.lowercase(),
+                paymentReference = paymentReference,  // Transaction ID
                 notes = note,
                 mobile = mobile
             )
@@ -108,7 +110,8 @@ class CheckoutViewModel @Inject constructor(
         guestMobile: String,
         guestCompany: String? = null,
         shippingAddress: String,
-        billingAddress: String
+        billingAddress: String,
+        paymentReference: String? = null  // Transaction ID for bKash, bank transfer
     ) {
         // Addresses are already validated and filled in CheckoutScreen
         if (shippingAddress.isBlank() || billingAddress.isBlank()) {
@@ -147,6 +150,7 @@ class CheckoutViewModel @Inject constructor(
                 shippingAddress = shippingAddress,
                 billingAddress = billingAddress,
                 paymentMethod = _paymentMethod.value.name.lowercase(),
+                paymentReference = paymentReference,  // Transaction ID
                 notes = note,
                 guestInfo = guestInfo
             )

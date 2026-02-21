@@ -165,6 +165,9 @@ enum class PaymentStatus {
     @SerializedName("pending")
     PENDING,
     
+    @SerializedName("pending_verification")
+    PENDING_VERIFICATION,  // For manual payments (bKash, bank transfer)
+    
     @SerializedName("paid")
     PAID,
     
@@ -263,6 +266,9 @@ data class CreateOrderRequest(
     
     @SerializedName("paymentMethod")
     val paymentMethod: String,
+    
+    @SerializedName("paymentReference")
+    val paymentReference: String? = null,  // Transaction ID for bKash, bank transfer (min 5 chars)
     
     @SerializedName("notes")
     val notes: String? = null,

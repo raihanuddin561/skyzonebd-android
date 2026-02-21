@@ -1,29 +1,40 @@
 # SkyzoneBD Android App
 
-Android e-commerce application for SkyzoneBD - A comprehensive B2B & B2C marketplace built with modern Android technologies.
+Android B2B wholesale marketplace application for SkyzoneBD - Bangladesh's leading wholesale platform built with modern Android technologies.
+
+## 🏪 Wholesale-Only Platform
+
+This app is exclusively for **B2B wholesale business transactions**, following the same model as Amazon Business and Alibaba wholesale marketplaces.
+
+- **Minimum Order Quantity (MOQ):** 10+ units per product
+- **Business Registration Required:** Company name mandatory
+- **Tiered Volume Pricing:** Buy more, save more
+- **Bulk Order Focus:** Optimized for wholesale buyers
+
+> **Note:** This app was recently migrated from a hybrid B2C/B2B model to wholesale-only. See [WHOLESALE_ONLY_MIGRATION.md](WHOLESALE_ONLY_MIGRATION.md) for details.
 
 ## Features
 
 ### Core E-commerce Features
-- ✅ User Authentication (Login/Register)
+- ✅ Business Account Registration (Wholesale)
 - ✅ Product Catalog with Categories
 - ✅ Product Search and Filters
 - ✅ Product Details with Image Gallery
-- ✅ Shopping Cart Management
+- ✅ Shopping Cart Management (MOQ enforced)
 - ✅ Checkout Process
 - ✅ Order History and Tracking
-- ✅ User Profile Management
+- ✅ Business Profile Management
 - ✅ Wishlist
 
-### B2B & B2C Support (Alibaba-style)
-- ✅ **Dual Pricing Model**
-  - Retail prices for B2C customers
-  - Wholesale prices for B2B customers
+### B2B Wholesale Features
+- ✅ **Wholesale-Only Pricing Model**
   - Volume-based tiered pricing
+  - Bulk order discounts
+  - Transparent MOQ requirements
 - ✅ **MOQ (Minimum Order Quantity) Enforcement**
-- ✅ **Request for Quote (RFQ) System** for B2B
-- ✅ **Business Account Registration** with verification
-- ✅ **Wholesale Discounts** based on quantity
+- ✅ **Request for Quote (RFQ) System** for custom bulk orders
+- ✅ **Business Account Registration** with company details
+- ✅ **Tiered Discounts** based on order quantity
 
 ### Technical Features
 - 🏗️ **Modern Architecture**: MVVM + Clean Architecture
@@ -126,22 +137,23 @@ The APK will be located at:
 
 ## Key Features Implementation
 
-### 1. Dual Pricing (B2C vs B2B)
-The app automatically displays different prices based on user type:
-- **B2C (Retail)**: Shows retail prices
-- **B2B (Wholesale)**: Shows wholesale prices with tiered discounts
-- **Guest**: Shows retail prices, can register for wholesale
+### 1. Wholesale-Only Pricing
+The app displays wholesale prices for all users:
+- **B2B (Wholesale)**: Default for all registered users - shows wholesale prices with tiered discounts
+- **Guest**: Can browse but must register as wholesale to order
+- **MOQ Enforced**: Minimum order quantities (typically 10+ units) required for all orders
 
 ### 2. MOQ Enforcement
-- Retail customers: MOQ = 1 (can buy single items)
-- Wholesale customers: MOQ varies by product (typically 5-50 units)
+- All products have minimum order quantities (default: 10 units)
 - Cart validates minimum quantities before checkout
+- Clear messaging when MOQ requirements not met
+- Tiered pricing benefits shown at different quantity levels
 
 ### 3. Request for Quote (RFQ)
-B2B customers can:
-- Request custom quotes for bulk orders
-- Specify target prices
-- Negotiate with suppliers
+Wholesale customers can:
+- Request custom quotes for large bulk orders
+- Specify target prices for negotiation
+- Submit requirements for custom products
 
 ## API Endpoints Used
 

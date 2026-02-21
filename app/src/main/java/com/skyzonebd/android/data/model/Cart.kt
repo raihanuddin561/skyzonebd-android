@@ -38,7 +38,7 @@ data class CartItem(
         val moq = if (userType == UserType.WHOLESALE && product.wholesaleEnabled) {
             product.wholesaleMOQ
         } else {
-            product.retailMOQ
+            product.retailMOQ ?: 1  // Default to 1 if null
         }
         
         return quantity >= moq

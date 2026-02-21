@@ -23,18 +23,104 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
 import okhttp3.CacheControl
+import okhttp3.Dns
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.io.IOException
+import java.net.InetAddress
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
+import android.util.Log
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    
+    /**
+     * Custom DNS resolver with fallback to help with DNS resolution issues
+     */
+    @Provides
+    @Singleton
+    fun provideDns(): Dns {
+        return object : Dns {
+            override fun lookup(hostname: String): List<InetAddress> {
+                return try {
+                    // Try system DNS first
+                    val addresses = Dns.SYSTEM.lookup(hostname)
+                    Log.d("NetworkModule", "DNS resolved $hostname to ${addresses.size} address(es)")
+                    addresses
+                } catch (e: UnknownHostException) {
+                    Log.e("NetworkModule", "DNS resolution failed for $hostname: ${e.message}")
+                    // Try one more time after a brief delay
+                    Thread.sleep(500)
+                    try {
+                        Dns.SYSTEM.lookup(hostname)
+                    } catch (e2: Exception) {
+                        Log.e("NetworkModule", "DNS retry also failed: ${e2.message}")
+                        throw e // Throw original exception
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Retry interceptor with exponential backoff for handling slow/unreliable backends
+     */
+    @Provides
+    @Singleton
+    @Named("retry")
+    fun provideRetryInterceptor(): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            var response: okhttp3.Response? = null
+            var lastException: IOException? = null
+            val maxRetries = 3
+            
+            for (attempt in 0 until maxRetries) {
+                try {
+                    response = chain.proceed(request)
+                    
+                    // If successful or client error (4xx), don't retry
+                    if (response.isSuccessful || response.code in 400..499) {
+                        return@Interceptor response
+                    }
+                    
+                    // Server error (5xx) or timeout - retry
+                    response.close()
+                    
+                } catch (e: SocketTimeoutException) {
+                    Log.w("NetworkModule", "Timeout on attempt ${attempt + 1}/$maxRetries: ${request.url}")
+                    lastException = e
+                    if (attempt == maxRetries - 1) {
+                        throw e
+                    }
+                } catch (e: IOException) {
+                    Log.w("NetworkModule", "Network error on attempt ${attempt + 1}/$maxRetries: ${e.message}")
+                    lastException = e
+                    if (attempt == maxRetries - 1) {
+                        throw e
+                    }
+                }
+                
+                // Exponential backoff: 1s, 2s, 4s
+                if (attempt < maxRetries - 1) {
+                    val delayMillis = (1000L * Math.pow(2.0, attempt.toDouble())).toLong()
+                    Log.d("NetworkModule", "Retrying after ${delayMillis}ms...")
+                    Thread.sleep(delayMillis)
+                }
+            }
+            
+            throw lastException ?: IOException("Max retries exceeded")
+        }
+    }
     
     @Provides
     @Singleton
@@ -75,6 +161,7 @@ object NetworkModule {
     
     @Provides
     @Singleton
+    @Named("cache")
     fun provideCacheInterceptor(): Interceptor {
         return Interceptor { chain ->
             val request = chain.request()
@@ -111,18 +198,24 @@ object NetworkModule {
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: AuthInterceptor,
-        cacheInterceptor: Interceptor,
+        @Named("cache") cacheInterceptor: Interceptor,
+        @Named("retry") retryInterceptor: Interceptor,
+        dns: Dns,
         cache: Cache
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .cache(cache)
+            .dns(dns) // Use custom DNS resolver
             .addInterceptor(authInterceptor)
+            .addInterceptor(retryInterceptor) // Add retry logic before making requests
             .addNetworkInterceptor(cacheInterceptor)
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(15, TimeUnit.SECONDS) // Reduced from 30s
-            .readTimeout(15, TimeUnit.SECONDS) // Reduced from 30s
-            .writeTimeout(15, TimeUnit.SECONDS) // Reduced from 30s
-            .retryOnConnectionFailure(true)
+            .connectTimeout(60, TimeUnit.SECONDS) // Increased to 60s for slow backend
+            .readTimeout(90, TimeUnit.SECONDS) // Increased to 90s for slow API responses
+            .writeTimeout(90, TimeUnit.SECONDS) // Increased to 90s for large uploads
+            .callTimeout(120, TimeUnit.SECONDS) // Overall call timeout of 2 minutes
+            .retryOnConnectionFailure(true) // Auto-retry failed connections
+            .connectionPool(okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES)) // Reuse connections
             .build()
     }
     

@@ -64,7 +64,7 @@ fun OrderItem.getDisplayString(): String {
  * Takes into account retail/sale price
  */
 fun Product.getFormattedPrice(): String {
-    val displayPrice = salePrice ?: retailPrice
+    val displayPrice = salePrice ?: retailPrice ?: price
     return displayPrice.formatPriceWithUnit(displayUnit)
 }
 

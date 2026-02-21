@@ -29,7 +29,7 @@ data class User(
     val role: UserRole = UserRole.BUYER,
     
     @SerializedName("userType")
-    val userType: UserType = UserType.RETAIL,
+    val userType: UserType = UserType.WHOLESALE,
     
     @SerializedName("isActive")
     val isActive: Boolean = true,
@@ -152,8 +152,7 @@ data class RegisterRequest(
     val password: String,
     val name: String,
     val phone: String,          // Required by web API
-    val companyName: String,    // Required by web API
-    val userType: UserType = UserType.RETAIL
+    val companyName: String     // Required by web API
 )
 
 data class AuthResponse(

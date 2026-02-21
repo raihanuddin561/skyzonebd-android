@@ -37,6 +37,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
                 <data android:scheme="http" />
+                <data android:host="skyzonebd.shop" />
                 <data android:host="skyzonebd.vercel.app" />
             </intent-filter>
         </activity>
